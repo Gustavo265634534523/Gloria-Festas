@@ -1,0 +1,19 @@
+# Arquivos de trabalho pesados: renders originais, cópias e testes (não fazem parte do site)
+_revisao/
+_trabalho/review/
+_trabalho/antigos/
+_trabalho/exp-site/
+_trabalho/render/nome/
+_trabalho/index-*.html
+*.raw
+
+# Material de apoio e cópias da skill
+_skill/
+SKILL.md
+Captura de tela_*.jpeg
+
+# Sistema
+node_modules/
+Thumbs.db
+desktop.ini
+.DS_Store

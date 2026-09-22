@@ -1,0 +1,649 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>render cloche</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas>
+<script>
+'use strict';
+// ------------------------------------------------------------------
+//  Renderizador da abertura "A tampa de servir" (Glória Festas)
+//  Raymarching WebGL2 + volumetria + bloom. Render offline em frames.
+// ------------------------------------------------------------------
+const VS = `#version 300 es
+const vec2 P[3] = vec2[3](vec2(-1,-1), vec2(3,-1), vec2(-1,3));
+out vec2 vUv;
+void main(){ vec2 p = P[gl_VertexID]; vUv = p*0.5+0.5; gl_Position = vec4(p,0,1); }`;
+
+const SCENE = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform vec2 uRes;
+uniform float uT;
+uniform vec3 uCamPos, uCamTarget;
+uniform float uFov;
+uniform vec2 uShift;
+uniform mat3 uLidInv;
+uniform vec3 uLidOff;
+uniform vec3 uCorePos;
+uniform float uCoreInt;
+uniform float uSteam;
+uniform float uGlint, uGlintAmt;
+uniform float uSprite;      // 1 = só a tampa, fundo transparente
+uniform float uSparkT;      // tempo das faíscas
+uniform float uHaze;
+
+const vec3 PIVOT = vec3(0.0, 0.0, -15.35);
+const vec3 LID_R = vec3(15.3, 13.0, 15.3);
+const float PLAT_Y = 1.6;
+const vec3 CORE_COL = vec3(1.0, 0.74, 0.42);
+const float CORE_SOFT = 7.0;
+const float TABLE_END = -40.0;
+bool gNoParty = false;
+
+// ---------------- util
+float sat(float x){ return clamp(x,0.,1.); }
+float hash12(vec2 p){ vec3 p3 = fract(vec3(p.xyx) * .1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+float hash13(vec3 p3){ p3 = fract(p3 * .1031); p3 += dot(p3, p3.zyx + 31.32); return fract((p3.x + p3.y) * p3.z); }
+vec3 hash31(float p){ vec3 p3 = fract(vec3(p) * vec3(.1031, .1030, .0973)); p3 += dot(p3, p3.yzx+33.33); return fract((p3.xxy+p3.yzz)*p3.zyx); }
+float noise3(vec3 x){ vec3 i = floor(x), f = fract(x); f = f*f*(3.-2.*f);
+  return mix(mix(mix(hash13(i),hash13(i+vec3(1,0,0)),f.x), mix(hash13(i+vec3(0,1,0)),hash13(i+vec3(1,1,0)),f.x),f.y),
+             mix(mix(hash13(i+vec3(0,0,1)),hash13(i+vec3(1,0,1)),f.x), mix(hash13(i+vec3(0,1,1)),hash13(i+vec3(1,1,1)),f.x),f.y), f.z); }
+float fbm(vec3 p){ float a=0.5, s=0.; for(int i=0;i<5;i++){ s += a*noise3(p); p = p*2.02 + vec3(1.7,9.2,3.1); a*=0.5; } return s; }
+
+// ---------------- SDF
+float sdTorus(vec3 p, vec2 t){ vec2 q = vec2(length(p.xz)-t.x, p.y); return length(q)-t.y; }
+float sdCappedCyl(vec3 p, float r, float h){ vec2 d = abs(vec2(length(p.xz), p.y)) - vec2(r,h); return min(max(d.x,d.y),0.) + length(max(d,0.)); }
+float sdRoundCyl(vec3 p, float r, float h, float rr){ vec2 d = vec2(length(p.xz)-r+rr, abs(p.y)-h+rr); return min(max(d.x,d.y),0.)+length(max(d,0.))-rr; }
+float sdEllipsoid(vec3 p, vec3 r){ float k0 = length(p/r); float k1 = length(p/(r*r)); return k0*(k0-1.)/k1; }
+
+vec3 toLid(vec3 p){ return uLidInv * (p - uLidOff) + PIVOT; }
+
+float mapPlatter(vec3 p){
+  float foot = sdCappedCyl(p - vec3(0,0.35,0), 12.0, 0.35);
+  float base = sdRoundCyl(p - vec3(0,1.15,0), 18.9, 0.45, 0.3);
+  float rim  = sdTorus(p - vec3(0,1.62,0), vec2(19.0, 0.72));
+  float bead = sdTorus(p - vec3(0,1.58,0), vec2(17.7, 0.16));
+  return min(min(foot, base), min(rim, bead));
+}
+float mapLid(vec3 q){
+  float shell = abs(sdEllipsoid(q, LID_R)) - 0.2;
+  shell = max(shell, -q.y + 0.35);
+  float rim  = sdTorus(q - vec3(0,0.46,0), vec2(15.33, 0.46));
+  float by = 3.4; float band = sdTorus(q - vec3(0,by,0), vec2(LID_R.x*sqrt(1.-(by/LID_R.y)*(by/LID_R.y)), 0.17));
+  float by2 = 10.2; float band2 = sdTorus(q - vec3(0,by2,0), vec2(LID_R.x*sqrt(1.-(by2/LID_R.y)*(by2/LID_R.y)), 0.12));
+  float neck   = sdCappedCyl(q - vec3(0,13.55,0), 0.72, 0.85);
+  float collar = sdTorus(q - vec3(0,13.05,0), vec2(1.7, 0.34));
+  float knob   = length(q - vec3(0,15.75,0)) - 1.6;
+  return min(min(min(shell, rim), min(band, band2)), min(min(neck, collar), knob));
+}
+vec2 map(vec3 p){
+  vec2 res = vec2(1e9, 0.);
+  if (uSprite < 0.5){ float dp = mapPlatter(p); if (dp < res.x) res = vec2(dp, 2.); }
+  vec3 q = toLid(p);
+  float bl = length(q - vec3(0,7.5,0)) - 20.0;          // bounding sphere
+  float dl = bl > 1.0 ? bl : mapLid(q);
+  if (dl < res.x) res = vec2(dl, 3.);
+  return res;
+}
+vec2 march(vec3 ro, vec3 rd, float tmax, int steps){
+  float t = 0.0;
+  for (int i=0;i<220;i++){
+    if (i>=steps) break;
+    vec3 p = ro + rd*t;
+    vec2 h = map(p);
+    if (abs(h.x) < 0.0008*t + 0.0015) return vec2(t, h.y);
+    t += h.x*0.8;
+    if (t > tmax) break;
+  }
+  return vec2(-1., 0.);
+}
+vec3 calcNormal(vec3 p){
+  const vec2 e = vec2(1,-1)*0.002;
+  return normalize(e.xyy*map(p+e.xyy).x + e.yyx*map(p+e.yyx).x + e.yxy*map(p+e.yxy).x + e.xxx*map(p+e.xxx).x);
+}
+float calcAO(vec3 p, vec3 n, float sc){
+  float occ = 0., sca = 1.;
+  for(int i=0;i<6;i++){ float h = 0.03*sc + sc*float(i)/5.; float d = map(p + h*n).x; occ += (h-d)*sca; sca *= 0.75; }
+  return clamp(1. - 1.2*occ/sc, 0., 1.);
+}
+float softShadow(vec3 ro, vec3 rd, float k){
+  float res = 1., t = 0.08;
+  for(int i=0;i<72;i++){ float h = map(ro+rd*t).x; res = min(res, k*h/t); t += clamp(h, 0.06, 2.5); if(res<0.002 || t>90.) break; }
+  return clamp(res,0.,1.);
+}
+
+// ---------------- visibilidade da luz interna (tampa + bandeja, analítico)
+float coreVis(vec3 p){
+  vec3 C = uCorePos;
+  float vis = 1.;
+  if (p.y < PLAT_Y && C.y > PLAT_Y){
+    float s = (PLAT_Y - p.y)/(C.y - p.y);
+    vec3 x = mix(p, C, s);
+    vis *= smoothstep(19.2, 20.2, length(x.xz));
+  }
+  vec3 a = toLid(p), b = toLid(C);
+  vec3 o = a / LID_R, dv = (b - a) / LID_R;
+  float A = dot(dv,dv), B = 2.*dot(o,dv), Cc = dot(o,o) - 1.;
+  float disc = B*B - 4.*A*Cc;
+  if (disc > 0.){
+    float sq = sqrt(disc);
+    float s1 = (-B - sq)/(2.*A), s2 = (-B + sq)/(2.*A);
+    if (s1 > 0. && s1 < 1.) vis *= smoothstep(0.55, -0.35, mix(a.y, b.y, s1));
+    if (s2 > 0. && s2 < 1.) vis *= smoothstep(0.55, -0.35, mix(a.y, b.y, s2));
+  }
+  return vis;
+}
+
+// ---------------- ambiente (reflexos)
+vec3 softbox(vec3 d, vec3 c, vec2 hs, float soft, float inten, vec3 col){
+  float cd = dot(d, c);
+  if (cd <= 0.) return vec3(0);
+  vec3 u = normalize(cross(vec3(0,1,0), c));
+  vec3 v = cross(c, u);
+  vec2 q = vec2(dot(d,u), dot(d,v))/cd;
+  vec2 m = smoothstep(hs+soft, hs-soft, abs(q));
+  float center = 1. - 0.3*length(q/hs);
+  return col * inten * m.x*m.y * max(center,0.);
+}
+vec3 partyLights(vec3 d, float rough){
+  vec3 acc = vec3(0);
+  for (int i=0;i<9;i++){
+    vec3 h = hash31(float(i)*4.77 + 2.0);
+    float az = mix(-2.9, 2.9, h.x);
+    float el = mix(0.06, 0.38, h.y);
+    vec3 c = normalize(vec3(cos(az)*(1.-el*el), el, sin(az)*(1.-el*el)));
+    float r = 0.035 + rough*0.5 + h.z*0.02;
+    float k = smoothstep(r, r*0.35, acos(clamp(dot(d,c),-1.,1.)));
+    vec3 col = h.z < 0.75 ? vec3(1.0,0.76,0.46) : vec3(1.0,0.56,0.64);
+    acc += col * k * 0.9 / (1. + rough*5.);
+  }
+  return acc;
+}
+vec3 partyLightsOld(vec3 d, float rough){
+  float el = d.y;
+  if (el < 0.02 || el > 0.5) return vec3(0);
+  float az = atan(d.z, d.x);
+  vec2 g = vec2(az*7.6, el*24.);
+  vec2 id = floor(g); vec2 f = fract(g) - 0.5;
+  float h = hash12(id + 17.);
+  if (h < 0.72) return vec3(0);
+  vec2 off = (vec2(hash12(id+3.1), hash12(id+7.7)) - 0.5)*0.55;
+  float r = 0.06 + rough*0.9;
+  float k = smoothstep(r, r*0.25, length(f - off));
+  vec3 c = mix(vec3(1.0,0.74,0.42), vec3(1.0,0.52,0.62), step(0.82, h));
+  return c * k * (0.6 + 1.4*hash12(id+1.3)) / (1. + rough*6.);
+}
+vec3 env(vec3 d, float rough){
+  float s = 0.02 + rough*0.5;
+  vec3 col = mix(vec3(0.010,0.003,0.006), vec3(0.050,0.015,0.028), smoothstep(-0.3, 0.9, d.y));
+  if (d.y < 0.) col = mix(col, vec3(0.005,0.0012,0.0028), smoothstep(0., -0.2, d.y));
+  col += softbox(d, normalize(vec3(-0.78,0.34,0.52)), vec2(0.085,0.80), s, 4.6, vec3(1.0,0.93,0.84));
+  col += softbox(d, normalize(vec3(-0.15,1.0,0.22)), vec2(0.75,0.42), s*1.5, 1.25, vec3(1.0,0.90,0.80));
+  col += softbox(d, normalize(vec3(0.92,0.26,-0.30)), vec2(0.050,0.95), s, 3.4, vec3(1.0,0.84,0.66));
+  col += softbox(d, normalize(vec3(0.45,0.10,0.89)), vec2(0.30,0.10), s, 0.55, vec3(1.0,0.70,0.72));
+  if (uGlintAmt > 0.001) col += softbox(d, normalize(vec3(sin(uGlint),0.28,cos(uGlint))), vec2(0.03,1.1), s, 7.0*uGlintAmt, vec3(1.,0.95,0.86));
+  if (!gNoParty) col += partyLights(d, rough);
+  return col;
+}
+
+// ---------------- fundo: sala escura com luzes de festa desfocadas
+vec3 bokeh(vec2 P){
+  vec3 acc = vec3(0);
+  for (int i=0;i<18;i++){
+    vec3 h = hash31(float(i)*7.13 + 3.0);
+    vec3 h2 = hash31(float(i)*3.71 + 11.0);
+    float hx = h.x < 0.28 ? h.x*0.9 : h.x;
+    vec2 c = vec2(mix(-175., 105., hx), mix(-8., 50., h.y));
+    float r = mix(3.0, 8.5, h.z*h.z);
+    float d = length(P - c);
+    float disc = smoothstep(r, r*0.93, d);
+    float ring = 0.78 + 0.22*smoothstep(r*0.55, r*0.98, d);
+    vec3 col = h2.x < 0.62 ? vec3(1.0,0.70,0.36) : (h2.x < 0.84 ? vec3(1.0,0.86,0.70) : vec3(0.95,0.42,0.58));
+    float side = mix(0.22, 1.0, smoothstep(-110., -20., c.x));
+    acc += col * disc * ring * mix(0.06, 0.34, h2.y) * side;
+  }
+  // guirlanda de lâmpadas (duas cordas em catenária)
+  for (int k=0;k<1;k++){
+    float y0 = k==0 ? 49. : 41.; float a = k==0 ? 150. : 110.; float x0 = k==0 ? -20. : 40.;
+    for (int i=0;i<15;i++){
+      float x = -185. + float(i)*21.0 + float(k)*9.;
+      float y = y0 - (a*cosh((x - x0)/a) - a)*0.30;
+      vec3 h = hash31(float(i + k*40)*1.91);
+      float r = 2.6 + h.x*1.4;
+      float d = length(P - vec2(x, y));
+      acc += vec3(1.0,0.78,0.48) * smoothstep(r, r*0.9, d) * (0.18 + 0.22*h.y) * mix(0.5, 1.0, smoothstep(-130., -50., x));
+    }
+  }
+  return acc;
+}
+vec3 backdrop(vec3 ro, vec3 rd){
+  vec3 col = mix(vec3(0.010,0.0025,0.006), vec3(0.028,0.008,0.016), smoothstep(-0.15, 0.45, rd.y));
+  float tb = (-230. - ro.z)/min(rd.z, -1e-3);
+  vec3 P = ro + rd*tb;
+  float pool = exp(-pow(length((P.xy - vec2(30., 10.))/vec2(120.,60.)), 2.));
+  col += vec3(0.070,0.019,0.033)*pool;
+  col += bokeh(P.xy) * 0.9;
+  return col;
+}
+
+// ---------------- vapor (fica quentinho)
+float steamDensity(vec3 p){
+  vec3 q = p - vec3(0., PLAT_Y, 0.);
+  float r = length(q.xz);
+  float h = q.y;
+  float shape = smoothstep(19., 5., r) * smoothstep(0.0, 4.0, h) * smoothstep(46., 8., h);
+  vec3 w = p*vec3(0.075,0.055,0.075) + vec3(0., -uT*7.5, uT*1.2);
+  float n = fbm(w + 0.8*vec3(fbm(w*1.3+3.), 0., fbm(w*1.3+7.)));
+  n = smoothstep(0.56, 0.86, n);
+  return shape * n;
+}
+
+// ---------------- luz volumétrica ao longo do raio
+vec3 volume(vec3 ro, vec3 rd, float tHit, float jit, int N, bool steam){
+  if (uCoreInt <= 0.0) return vec3(0);
+  const float RG = 75.0;
+  vec3 oc = ro - uCorePos; float b = dot(oc, rd); float c = dot(oc,oc) - RG*RG; float h = b*b - c;
+  if (h < 0.) return vec3(0);
+  h = sqrt(h); float t0 = max(-b - h, 0.), t1 = min(-b + h, tHit);
+  if (t1 <= t0) return vec3(0);
+  float dt = (t1 - t0)/float(N);
+  vec3 acc = vec3(0);
+  for (int i=0;i<96;i++){
+    if (i>=N) break;
+    float t = t0 + (float(i)+jit)*dt;
+    vec3 p = ro + rd*t;
+    vec3 L = uCorePos - p; float d2 = dot(L,L);
+    float vis = coreVis(p);
+    if (vis < 0.001) continue;
+    float dens = uHaze * exp(-sqrt(d2)/6.5);
+    if (steam && uSteam > 0.001) dens += uSteam * 0.16 * steamDensity(p);
+    acc += vis * dens / (d2 + CORE_SOFT) * dt;
+  }
+  return acc * uCoreInt * CORE_COL;
+}
+
+// ---------------- faíscas douradas
+vec3 sparkPos(int i, out float alpha, out float tw){
+  vec3 h = hash31(float(i)*13.17 + 1.0);
+  vec3 h2 = hash31(float(i)*5.31 + 9.0);
+  float t0 = 0.45 + 0.07*h.x;
+  float tau = clamp((uSparkT - t0)/(1.0 - t0), 0., 1.);
+  alpha = smoothstep(0.0, 0.04, tau) * (uSparkT > t0 ? 1. : 0.);
+  vec3 dir = normalize(vec3((h.y-0.5)*1.5, 0.55 + 0.9*h.z, (h2.x-0.5)*1.3));
+  float R = mix(8., 24., h2.y);
+  float burst = 1. - pow(1. - min(tau*2.1, 1.), 3.);
+  vec3 p = uCorePos + dir*R*burst;
+  p.y -= (3. + 10.*h2.z) * smoothstep(0.2, 1.0, tau) * tau;
+  p.x += sin(tau*4.0 + float(i))*1.6;
+  p.z += cos(tau*3.1 + float(i)*1.7)*1.4;
+  alpha *= smoothstep(PLAT_Y + 0.5, PLAT_Y + 4.0, p.y);
+  tw = 0.55 + 0.45*sin(uSparkT*95. + float(i)*2.3);
+  return p;
+}
+vec3 sparkles(vec3 ro, vec3 fw, vec3 rt, vec3 up, float th, float aspect, vec2 ndc, float tHit, vec3 rd){
+  if (uSparkT < 0.44) return vec3(0);
+  vec3 acc = vec3(0);
+  for (int i=0;i<90;i++){
+    float a, tw; vec3 P = sparkPos(i, a, tw);
+    if (a < 0.002) continue;
+    vec3 v = P - ro; float depth = dot(v, fw);
+    if (depth <= 1.) continue;
+    float along = length(v);
+    if (tHit > 0. && along > tHit + 0.5) continue;
+    vec2 s = vec2(dot(v, rt)/(depth*th*aspect), dot(v, up)/(depth*th));
+    vec2 dp = (s - ndc) * uRes * 0.5;
+    float pxScale = uRes.y/1080.;
+    float coc = abs(depth - 70.)*0.10*pxScale;
+    float r = (1.7 + coc)*pxScale;
+    float d = length(dp);
+    if (d > 60.*pxScale) continue;
+    float core = exp(-d*d/(r*r*1.2));
+    float bright = (2.2 + 3.0*hash12(vec2(float(i),3.))) * tw / (1. + coc*0.25);
+    vec3 col = mix(vec3(1.0,0.78,0.45), vec3(1.0,0.92,0.78), hash12(vec2(float(i),7.)));
+    acc += col * core * bright * a;
+    // estrela de 4 pontas (como no logo) nas mais brilhantes
+    if (hash12(vec2(float(i),11.)) > 0.80){
+      float sx = exp(-abs(dp.x)/(r*3.4)) * exp(-dp.y*dp.y/(r*r*0.22));
+      float sy = exp(-abs(dp.y)/(r*3.4)) * exp(-dp.x*dp.x/(r*r*0.22));
+      acc += col * (sx+sy) * bright * 0.40 * a * tw;
+    }
+  }
+  return acc;
+}
+
+// ---------------- materiais
+const vec3 GOLD = vec3(0.93, 0.66, 0.30);
+vec3 fresnel(vec3 F0, float c){ return F0 + (1.-F0)*pow(1.-c, 5.); }
+
+vec3 shadeGoldSimple(vec3 p, vec3 n, vec3 rd, float rough){
+  vec3 r = reflect(rd, n);
+  vec3 F = fresnel(GOLD, sat(dot(n,-rd)));
+  vec3 c = F * env(r, rough);
+  vec3 L = uCorePos - p; float d2 = dot(L,L); vec3 l = L*inversesqrt(d2);
+  c += GOLD * 0.35 * uCoreInt * CORE_COL * coreVis(p) * sat(dot(n,l)) / (d2 + CORE_SOFT) * 0.06;
+  return c;
+}
+vec3 floorBase(vec3 p);
+
+vec3 traceSecondary(vec3 ro, vec3 rd, float jit){
+  vec2 h = march(ro, rd, 140., 110);
+  float tHit = 1e4;
+  vec3 col;
+  if (h.x > 0.){
+    tHit = h.x;
+    vec3 p = ro + rd*h.x; vec3 n = calcNormal(p);
+    float rough = h.y > 2.5 ? 0.10 : 0.20;
+    col = shadeGoldSimple(p, n, rd, rough);
+  } else if (rd.y < 0. && uSprite < 0.5){
+    float tf = -ro.y/rd.y; vec3 p = ro + rd*tf; tHit = tf;
+    col = floorBase(p);
+  } else {
+    col = uSprite > 0.5 ? env(rd, 0.05) : env(rd, 0.02);
+  }
+  if (uSprite < 0.5) col += volume(ro, rd, tHit, jit, 24, false);
+  return col;
+}
+
+vec3 floorBase(vec3 p){
+  vec3 base = vec3(0.070, 0.016, 0.032);
+  vec3 n = vec3(0,1,0);
+  float ao = calcAO(p, n, 3.0);
+  vec3 Lk = normalize(vec3(-0.30,0.92,0.25));
+  float sh = softShadow(p + n*0.05, Lk, 4.0);
+  float pool = exp(-pow(length(p.xz - vec2(-2., 6.))/34., 2.));
+  vec3 col = base * (0.10 + 1.25*sh*pool) * ao;
+  // luz da tampa caindo na mesa
+  vec3 L = uCorePos - p; float d2 = dot(L,L); vec3 l = L*inversesqrt(d2);
+  col += vec3(0.55,0.20,0.20) * uCoreInt * CORE_COL * coreVis(p) * sat(dot(n,l)) / (d2 + CORE_SOFT) * 4.0;
+  float fade = smoothstep(TABLE_END + 8., TABLE_END - 14., p.z);
+  return col * (1. - fade);
+}
+vec3 floorShade(vec3 p, vec3 rd, float jit){
+  vec3 n = vec3(0,1,0);
+  vec3 col = floorBase(p);
+  vec3 r = reflect(rd, n);
+  float fr = (0.035 + 0.965*pow(1. - sat(dot(n,-rd)), 5.)) * 0.75;
+  gNoParty = true;
+  col += fr * traceSecondary(p + n*0.02, r, jit);
+  gNoParty = false;
+  float fade = smoothstep(TABLE_END + 8., TABLE_END - 14., p.z);
+  return col * (1. - fade);
+}
+
+vec3 shadeGold(vec3 p, vec3 n, vec3 rd, float rough, float jit){
+  vec3 r = reflect(rd, n);
+  vec3 F = fresnel(GOLD, sat(dot(n,-rd)));
+  float ao = calcAO(p, n, 1.2);
+  vec3 refl = traceSecondary(p + n*0.03, r, jit);
+  // desfoque barato da rugosidade: mistura com o ambiente borrado
+  refl = mix(refl, env(r, rough*2.5 + 0.1), rough*1.6);
+  vec3 c = F * refl * mix(0.55, 1.0, ao);
+  vec3 L = uCorePos - p; float d2 = dot(L,L); vec3 l = L*inversesqrt(d2);
+  float v = coreVis(p);
+  c += GOLD * uCoreInt * CORE_COL * v * sat(dot(n,l)) / (d2 + CORE_SOFT) * 0.055 * ao;
+  return c;
+}
+
+void main(){
+  vec2 frag = gl_FragCoord.xy;
+  vec2 ndc0 = (frag / uRes)*2. - 1.;
+  vec2 ndc = ndc0 - uShift;
+  float aspect = uRes.x/uRes.y;
+  vec3 ro = uCamPos;
+  vec3 fw = normalize(uCamTarget - uCamPos);
+  vec3 rt = normalize(cross(fw, vec3(0,1,0)));
+  vec3 up = cross(rt, fw);
+  float th = tan(uFov*0.5);
+  vec3 rd = normalize(fw + rt*ndc.x*th*aspect + up*ndc.y*th);
+  float jit = hash12(frag + fract(uT*17.3)*113.);
+
+  vec2 h = march(ro, rd, 400., 200);
+  vec3 col;
+  float tHit = 1e4;
+  float alpha = 1.0;
+  if (h.x > 0.){
+    tHit = h.x;
+    vec3 p = ro + rd*h.x;
+    vec3 n = calcNormal(p);
+    float rough = h.y > 2.5 ? 0.07 : 0.17;
+    col = shadeGold(p, n, rd, rough, jit);
+  } else if (uSprite > 0.5){
+    col = vec3(0); alpha = 0.0;
+  } else if (rd.y < 0. && (ro.y/-rd.y) < 2000.){
+    float tf = -ro.y/rd.y; vec3 p = ro + rd*tf;
+    tHit = tf;
+    col = floorShade(p, rd, jit);
+    float fade = smoothstep(TABLE_END + 8., TABLE_END - 14., p.z);
+    col += backdrop(ro, rd) * fade;
+  } else {
+    col = backdrop(ro, rd);
+  }
+  if (uSprite < 0.5){
+    col += volume(ro, rd, tHit, jit, 64, true);
+    col += sparkles(ro, fw, rt, up, th, aspect, ndc, h.x > 0. ? h.x : -1., rd);
+  }
+  fragColor = vec4(col*alpha, alpha);
+}`;
+
+const DOWN = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 fragColor;
+uniform sampler2D uSrc; uniform vec2 uTexel; uniform float uThresh; uniform int uFirst;
+void main(){
+  vec3 a = texture(uSrc, vUv + uTexel*vec2(-1,-1)).rgb;
+  vec3 b = texture(uSrc, vUv + uTexel*vec2( 1,-1)).rgb;
+  vec3 c = texture(uSrc, vUv + uTexel*vec2(-1, 1)).rgb;
+  vec3 d = texture(uSrc, vUv + uTexel*vec2( 1, 1)).rgb;
+  vec3 col = (a+b+c+d)*0.25;
+  if (uFirst==1){ float l = max(col.r, max(col.g,col.b)); col *= max(l - uThresh, 0.)/max(l, 1e-4); }
+  fragColor = vec4(col,1);
+}`;
+
+const UP = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 fragColor;
+uniform sampler2D uSrc; uniform vec2 uTexel;
+void main(){
+  vec3 s = vec3(0);
+  s += texture(uSrc, vUv + uTexel*vec2(-1,-1)).rgb;
+  s += texture(uSrc, vUv + uTexel*vec2( 0,-1)).rgb*2.;
+  s += texture(uSrc, vUv + uTexel*vec2( 1,-1)).rgb;
+  s += texture(uSrc, vUv + uTexel*vec2(-1, 0)).rgb*2.;
+  s += texture(uSrc, vUv).rgb*4.;
+  s += texture(uSrc, vUv + uTexel*vec2( 1, 0)).rgb*2.;
+  s += texture(uSrc, vUv + uTexel*vec2(-1, 1)).rgb;
+  s += texture(uSrc, vUv + uTexel*vec2( 0, 1)).rgb*2.;
+  s += texture(uSrc, vUv + uTexel*vec2( 1, 1)).rgb;
+  fragColor = vec4(s/16., 1);
+}`;
+
+const COMP = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 fragColor;
+uniform sampler2D uHdr, uBloom;
+uniform float uExposure, uBloomStr, uSeed, uSprite, uVignette, uGrain;
+uniform vec2 uOut;
+float hash12(vec2 p){ vec3 p3 = fract(vec3(p.xyx) * .1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+vec3 aces(vec3 x){ const float a=2.51,b=0.03,c=2.43,d=0.59,e=0.14; return clamp((x*(a*x+b))/(x*(c*x+d)+e),0.,1.); }
+void main(){
+  vec4 hv = texture(uHdr, vUv);
+  vec3 hdr = hv.rgb; float a = hv.a;
+  if (uSprite > 0.5){
+    vec3 c = a > 0.0001 ? hdr / a : vec3(0);
+    c = aces(c*uExposure);
+    c = pow(c, vec3(1./2.2));
+    fragColor = vec4(c, a);
+    return;
+  }
+  vec3 col = hdr + texture(uBloom, vUv).rgb*uBloomStr;
+  col *= uExposure;
+  col = aces(col);
+  float l = dot(col, vec3(0.2126,0.7152,0.0722));
+  col = mix(col, col*vec3(1.03,0.985,0.93), smoothstep(0.45,1.,l));
+  col += vec3(0.0065,0.0012,0.0035)*(1.-smoothstep(0.,0.25,l));
+  vec2 q = vUv - 0.5; q.x *= uOut.x/uOut.y;
+  col *= 1. - uVignette*smoothstep(0.35, 1.25, length(q));
+  col = pow(max(col,0.), vec3(1./2.2));
+  float g = hash12(gl_FragCoord.xy + uSeed*97.13) + hash12(gl_FragCoord.xy*1.37 + uSeed*31.7) - 1.0;
+  col += g*uGrain;
+  fragColor = vec4(col,1);
+}`;
+
+const cv = document.getElementById('c');
+const gl = cv.getContext('webgl2', {antialias:false, alpha:true, premultipliedAlpha:false, preserveDrawingBuffer:true});
+if (!gl.getExtension('EXT_color_buffer_float')) throw new Error('sem float FB');
+function compile(type, src){ const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+function program(fs){ const p = gl.createProgram(); gl.attachShader(p, compile(gl.VERTEX_SHADER, VS)); gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(p); if(!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p)); p.u = {}; return p; }
+function U(p, n){ if (!(n in p.u)) p.u[n] = gl.getUniformLocation(p, n); return p.u[n]; }
+function target(w,h){ const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA16F, w, h);
+  for (const [k,v] of [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D,k,v);
+  const fb = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+  return {t, fb, w, h}; }
+
+const P_SCENE = program(SCENE), P_DOWN = program(DOWN), P_UP = program(UP), P_COMP = program(COMP);
+const vao = gl.createVertexArray();
+let cache = {};
+function targets(iw, ih){
+  const key = iw+'x'+ih;
+  if (cache.key === key) return cache;
+  cache = {key, hdr: target(iw, ih), levels: []};
+  let w = iw, h = ih;
+  for (let i=0;i<7;i++){ w = Math.max(1, w>>1); h = Math.max(1, h>>1); cache.levels.push(target(w,h)); }
+  return cache;
+}
+
+// ---------------- linha do tempo (t = progresso do scroll 0..1)
+const cl = (x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const smooth = x=>x*x*(3-2*x);
+const smoother = x=>x*x*x*(x*(x*6-15)+10);
+const lerp = (a,b,k)=>a+(b-a)*k;
+const lerp3 = (a,b,k)=>a.map((v,i)=>lerp(v,b[i],k));
+
+function rotX(a){ const c=Math.cos(a), s=Math.sin(a); return [[1,0,0],[0,c,-s],[0,s,c]]; }
+function rotY(a){ const c=Math.cos(a), s=Math.sin(a); return [[c,0,s],[0,1,0],[-s,0,c]]; }
+function rotZ(a){ const c=Math.cos(a), s=Math.sin(a); return [[c,-s,0],[s,c,0],[0,0,1]]; }
+function mul(A,B){ return A.map((row,i)=>[0,1,2].map(j=>row[0]*B[0][j]+row[1]*B[1][j]+row[2]*B[2][j])); }
+function mulv(A,v){ return A.map(row=>row[0]*v[0]+row[1]*v[1]+row[2]*v[2]); }
+
+window.CFG = {
+  camA:[0,21,94], camB:[0,16.5,80], tgtA:[0,7.2,0], tgtB:[0,5.0,0],
+  fov:27, shift:[0.30,0.0],
+  exposure:1.05, bloom:0.20, thresh:1.5, haze:0.035, vignette:0.55, grain:0.007,
+};
+
+function frameParams(t, over={}){
+  const C = Object.assign({}, window.CFG, over);
+  const seg=(a,b)=>cl((t-a)/(b-a));
+  const peek = smoother(seg(0.17,0.40));
+  const rise = seg(0.40,0.70);
+  const riseE = smooth(rise);
+  const theta = (peek*7.0 + smoother(rise)*18)*Math.PI/180;
+  const liftY = peek*0.35 + Math.pow(rise,1.6)*46;
+  const liftZ = -riseE*10;
+  const yaw = riseE*0.30;
+  const roll = riseE*0.05 + Math.sin(t*22)*0.0035*peek*(1-rise);
+  // R = rotY(yaw)*rotX(-theta)*rotZ(roll)
+  const R = mul(rotY(yaw), mul(rotX(-theta), rotZ(roll)));
+  const Rt = [[R[0][0],R[1][0],R[2][0]],[R[0][1],R[1][1],R[2][1]],[R[0][2],R[1][2],R[2][2]]];
+  const PIV = [0,0,-15.35];
+  const lidOff = [0 + PIV[0], 1.6 + liftY + PIV[1], liftZ + PIV[2]];
+  const camK = smoother(seg(0.0, 0.97));
+  const camPos = over.camPos || lerp3(C.camA, C.camB, camK);
+  const camTgt = over.camTgt || lerp3(C.tgtA, C.tgtB, camK);
+  const coreBase = 95*smooth(seg(0.14,0.30))*(1 + 2.0*(1 - smooth(seg(0.34,0.52))));
+  const flare = 60*Math.exp(-Math.pow((t-0.53)/0.08,2));
+  const settle = lerp(1.0, 0.62, smooth(seg(0.60,0.92)));
+  const coreInt = (coreBase*settle + flare);
+  const corePos = [0, lerp(3.4, 4.6, smooth(seg(0.40,0.75))), 0];
+  const steam = smooth(seg(0.20,0.36))*(1 - 0.85*smooth(seg(0.50,0.80)));
+  const glintAmt = Math.sin(Math.PI*cl(t/0.22))*1.0 + 0.0;
+  const glint = lerp(-1.25, 1.35, smooth(cl(t/0.22)));
+  return {R:Rt, lidOff, camPos, camTgt, coreInt, corePos, steam, glint, glintAmt, C};
+}
+
+window.render = function(t, opts={}){
+  const outW = opts.w || 1920, outH = opts.h || 1080, ss = opts.ss || 2;
+  const iw = outW*ss, ih = outH*ss;
+  cv.width = outW; cv.height = outH;
+  const T = targets(iw, ih);
+  const F = frameParams(t, opts.over || {});
+  const C = F.C;
+  const sprite = opts.sprite ? 1 : 0;
+  gl.bindVertexArray(vao);
+  // ---- cena (em ladrilhos, para não estourar o watchdog da GPU)
+  gl.useProgram(P_SCENE);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, T.hdr.fb);
+  gl.viewport(0,0,iw,ih);
+  gl.disable(gl.BLEND);
+  gl.uniform2f(U(P_SCENE,'uRes'), iw, ih);
+  gl.uniform1f(U(P_SCENE,'uT'), t);
+  gl.uniform3fv(U(P_SCENE,'uCamPos'), F.camPos);
+  gl.uniform3fv(U(P_SCENE,'uCamTarget'), F.camTgt);
+  gl.uniform1f(U(P_SCENE,'uFov'), (opts.fov || C.fov)*Math.PI/180);
+  gl.uniform2fv(U(P_SCENE,'uShift'), opts.shift || C.shift);
+  const m = F.R; // colunas
+  gl.uniformMatrix3fv(U(P_SCENE,'uLidInv'), false, [m[0][0],m[1][0],m[2][0], m[0][1],m[1][1],m[2][1], m[0][2],m[1][2],m[2][2]]);
+  gl.uniform3fv(U(P_SCENE,'uLidOff'), opts.lidOff || F.lidOff);
+  gl.uniform3fv(U(P_SCENE,'uCorePos'), F.corePos);
+  gl.uniform1f(U(P_SCENE,'uCoreInt'), opts.coreInt ?? F.coreInt);
+  gl.uniform1f(U(P_SCENE,'uSteam'), F.steam);
+  gl.uniform1f(U(P_SCENE,'uGlint'), F.glint);
+  gl.uniform1f(U(P_SCENE,'uGlintAmt'), opts.glintAmt ?? F.glintAmt);
+  gl.uniform1f(U(P_SCENE,'uSprite'), sprite);
+  gl.uniform1f(U(P_SCENE,'uSparkT'), t);
+  gl.uniform1f(U(P_SCENE,'uHaze'), C.haze);
+  gl.enable(gl.SCISSOR_TEST);
+  const tiles = opts.tiles || (ss >= 2 ? 6 : 3);
+  for (let ty=0; ty<tiles; ty++) for (let tx=0; tx<tiles; tx++){
+    const x0 = Math.floor(tx*iw/tiles), x1 = Math.floor((tx+1)*iw/tiles);
+    const y0 = Math.floor(ty*ih/tiles), y1 = Math.floor((ty+1)*ih/tiles);
+    gl.scissor(x0, y0, x1-x0, y1-y0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.finish();
+  }
+  gl.disable(gl.SCISSOR_TEST);
+  // ---- bloom
+  let src = T.hdr;
+  gl.useProgram(P_DOWN);
+  T.levels.forEach((L, i) => {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, L.fb); gl.viewport(0,0,L.w,L.h);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, src.t);
+    gl.uniform1i(U(P_DOWN,'uSrc'), 0);
+    gl.uniform2f(U(P_DOWN,'uTexel'), 1/src.w, 1/src.h);
+    gl.uniform1f(U(P_DOWN,'uThresh'), C.thresh);
+    gl.uniform1i(U(P_DOWN,'uFirst'), i===0 ? 1 : 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    src = L;
+  });
+  gl.useProgram(P_UP);
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+  for (let i = T.levels.length-1; i > 0; i--){
+    const small = T.levels[i], big = T.levels[i-1];
+    gl.bindFramebuffer(gl.FRAMEBUFFER, big.fb); gl.viewport(0,0,big.w,big.h);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, small.t);
+    gl.uniform1i(U(P_UP,'uSrc'), 0);
+    gl.uniform2f(U(P_UP,'uTexel'), 1/small.w, 1/small.h);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  gl.disable(gl.BLEND);
+  // ---- composição final
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0,0,outW,outH);
+  gl.useProgram(P_COMP);
+  gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T.hdr.t);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, T.levels[0].t);
+  gl.uniform1i(U(P_COMP,'uHdr'), 0); gl.uniform1i(U(P_COMP,'uBloom'), 1);
+  gl.uniform1f(U(P_COMP,'uExposure'), opts.exposure ?? C.exposure);
+  gl.uniform1f(U(P_COMP,'uBloomStr'), sprite ? 0 : C.bloom);
+  gl.uniform1f(U(P_COMP,'uSeed'), t*1000 + 1);
+  gl.uniform1f(U(P_COMP,'uSprite'), sprite);
+  gl.uniform1f(U(P_COMP,'uVignette'), C.vignette);
+  gl.uniform1f(U(P_COMP,'uGrain'), C.grain);
+  gl.uniform2f(U(P_COMP,'uOut'), outW, outH);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.finish();
+  const fmt = opts.fmt === 'jpeg' ? 'image/jpeg' : 'image/png';
+  return cv.toDataURL(fmt, 0.93);
+};
+window.ready = true;
+</script></body></html>

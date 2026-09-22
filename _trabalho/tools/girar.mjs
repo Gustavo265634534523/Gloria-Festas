@@ -1,0 +1,27 @@
+// Tablet girando: em pé carrega o vídeo em pé; deitado troca para o vídeo deitado; e volta
+import { launch, navigate } from './cdp.mjs';
+import { writeFileSync } from 'node:fs';
+const out = 'C:/Users/tvnn/Desktop/site minha mae/_trabalho/review/site/';
+const c = await launch({ port: 9700 + Math.floor(Math.random() * 90) });
+const logs = [];
+c.on(m => { if (m.method === 'Runtime.exceptionThrown') logs.push(m.params.exceptionDetails.exception?.description); if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') logs.push(m.params.args.map(a => a.value).join(' ')); });
+await c.send('Network.enable');
+const reqs = []; c.on(m => { if (m.method === 'Network.requestWillBeSent' && /hero-scrub/.test(m.params.request.url)) reqs.push(m.params.request.url.split('/').pop()); });
+await c.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
+const tam = async (w, h) => { await c.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: true, screenOrientation: w > h ? { type: 'landscapePrimary', angle: 90 } : { type: 'portraitPrimary', angle: 0 } }); };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const estado = () => c.evaluate(`document.getElementById('stage').className + ' | src:' + (document.getElementById('hero').videoWidth + 'x' + document.getElementById('hero').videoHeight)`);
+const shot = async n => { const r = await c.send('Page.captureScreenshot', { format: 'jpeg', quality: 80 }); writeFileSync(out + 'girar-' + n + '.jpg', Buffer.from(r.data, 'base64')); };
+await tam(768, 1024);
+await navigate(c, 'http://localhost:8080/', 3500);
+await c.evaluate(`(()=>{const h=document.getElementById('inicio');scrollTo({top:h.offsetTop+(h.offsetHeight-innerHeight)*0.5,behavior:'instant'})})()`);
+await sleep(1500); console.log('em pé:', await estado()); await shot('1-empe');
+await tam(1024, 768); await sleep(3500);
+await c.evaluate(`(()=>{const h=document.getElementById('inicio');scrollTo({top:h.offsetTop+(h.offsetHeight-innerHeight)*0.5,behavior:'instant'})})()`);
+await sleep(1500); console.log('deitado:', await estado()); await shot('2-deitado');
+await tam(768, 1024); await sleep(3500);
+await c.evaluate(`(()=>{const h=document.getElementById('inicio');scrollTo({top:h.offsetTop+(h.offsetHeight-innerHeight)*0.5,behavior:'instant'})})()`);
+await sleep(1500); console.log('em pé de novo:', await estado()); await shot('3-empe');
+console.log('vídeos pedidos:', reqs.join(', '));
+console.log('erros:', logs.length ? logs.join(' | ') : 'nenhum');
+c.close(); process.exit(0);

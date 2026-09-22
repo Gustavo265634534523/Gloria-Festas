@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>nome para o molde 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400..900&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #000; }
+  #txt {
+    position: absolute; left: 60px; top: 60px; white-space: nowrap; color: #fff; background: #000;
+    font-family: "Bodoni Moda", serif; line-height: 1.3; padding: 40px 0 40px 0;
+    font-optical-sizing: none; text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<div id="txt">GLÓRIA FESTAS</div>
+<script>
+  // parâmetros pela URL: ?w=700&o=14&ls=.08&fs=320
+  const q = new URLSearchParams(location.search);
+  const el = document.getElementById('txt');
+  el.style.fontSize = (q.get('fs') || 320) + 'px';
+  el.style.fontWeight = q.get('w') || 700;
+  el.style.fontVariationSettings = `"opsz" ${q.get('o') || 14}, "wght" ${q.get('w') || 700}`;
+  el.style.letterSpacing = (q.get('ls') || .08) + 'em';
+  window.medidas = async () => {
+    await document.fonts.ready;
+    await document.fonts.load(`${q.get('w') || 700} ${q.get('fs') || 320}px "Bodoni Moda"`, 'GLÓRIA FESTAS');
+    const r = el.getBoundingClientRect();
+    // caixa (avanço) de cada letra, para achar a altura das maiúsculas pelo F
+    const t = el.firstChild, letras = [];
+    for (let i = 0; i < t.length; i++) {
+      const rg = document.createRange(); rg.setStart(t, i); rg.setEnd(t, i + 1);
+      const b = rg.getBoundingClientRect(); letras.push({ c: t.data[i], x: b.left, w: b.width });
+    }
+    return { x: r.left, y: r.top, w: r.width, h: r.height, letras, fonteOk: document.fonts.check(`700 20px "Bodoni Moda"`) };
+  };
+</script>
+</body>
+</html>

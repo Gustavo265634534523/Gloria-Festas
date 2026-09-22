@@ -1,0 +1,25 @@
+import { launch, navigate } from './cdp.mjs';
+import { writeFileSync } from 'node:fs';
+const [W, H, mob] = [+(process.argv[2] || 1440), +(process.argv[3] || 900), process.argv[4] === 'm'];
+const c = await launch({ port: 9200 + Math.floor(Math.random() * 90) });
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const errs = [];
+c.on(m => { if (m.method === 'Runtime.exceptionThrown') errs.push(m.params.exceptionDetails.exception?.description); });
+await c.send('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: mob ? 2 : 1, mobile: mob });
+if (mob) await c.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+await c.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
+await navigate(c, 'http://localhost:8080/', 1500);
+await c.evaluate(`document.getElementById('feedbacks').scrollIntoView({behavior:'instant', block:'start'})`);
+await sleep(2500);
+const shot = async n => { const r = await c.send('Page.captureScreenshot', { format: 'jpeg', quality: 82 }); writeFileSync(`C:/Users/tvnn/Desktop/site minha mae/_trabalho/review/site/est-${mob ? 'm' : 'd'}-${n}.jpg`, Buffer.from(r.data, 'base64')); };
+await shot('calmo');
+// segurar o clique num espaço vazio da seção acelera
+const p = await c.evaluate(`(() => { const r = document.getElementById('feedbacks').getBoundingClientRect(); return { x: r.left + r.width * .82, y: Math.max(120, r.top + 180) }; })()`);
+if (mob) await c.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: p.x, y: p.y }] });
+else await c.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: p.x, y: p.y, button: 'left', clickCount: 1 });
+await sleep(1200); await shot('rapido');
+if (mob) await c.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+else await c.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: p.x, y: p.y, button: 'left', clickCount: 1 });
+const n = await c.evaluate(`(() => { const cv = document.querySelector('.estrelas'); return cv.width + 'x' + cv.height; })()`);
+console.log('tela das estrelas:', n, '| erros JS:', errs.length ? errs.join(' / ') : 'nenhum');
+c.close(); process.exit(0);
