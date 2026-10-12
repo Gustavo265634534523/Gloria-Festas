@@ -4,8 +4,8 @@ Site do Buffet Glória Festas, de Nilópolis (RJ), que realiza sonhos desde 2010
 Buffet infantil, buffet adulto, 15 anos e casamento, na casa do cliente ou no salão que ele escolher.
 
 O site é uma página só, em HTML, CSS e JavaScript puros, sem nenhuma biblioteca.
-A abertura é guiada pela rolagem: a tampa dourada levanta e revela a festa, com um vídeo
-próprio para computador (deitado) e outro para celular (em pé).
+A abertura é uma capa fixa, sem rolagem guiada: o título, os botões de orçamento e WhatsApp
+e uma colagem com fotos reais das festas. Os fundos não se mexem.
 
 ## Como ver o site no computador
 

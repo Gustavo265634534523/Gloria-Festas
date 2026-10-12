@@ -58,18 +58,16 @@ button,input,select,textarea{font:inherit;color:inherit}
 ::selection{background:var(--gold-light);color:var(--ink)}
 .wrap{width:min(1200px,100% - 2*var(--gut));margin-inline:auto}
 
-/* ---------- camada de ambiente (fundo fixo que respira) ---------- */
+/* ---------- camada de ambiente (fundo fixo e parado) ---------- */
 .ambient{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;background:var(--canvas-2)}
 .ambient .grao{position:absolute;left:0;top:0;width:100%;height:100vh;height:100lvh;display:block;opacity:0;transition:opacity .9s var(--ease-out)}
 .ambient .grao.on{opacity:1}
 .ambient.com-grao i,.ambient.com-grao::after{display:none}
 #festas::before{content:"";position:absolute;left:0;right:0;top:-46px;height:min(34vh,300px);background:linear-gradient(180deg,var(--canvas-2),rgba(243,234,223,0));pointer-events:none;z-index:-1}
-.ambient i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;filter:blur(60px);opacity:.55;will-change:transform}
-.ambient i:nth-child(1){left:-20vmax;top:-18vmax;background:radial-gradient(circle,rgba(225,202,139,.42),rgba(225,202,139,0) 62%);animation:drift1 96s var(--ease-io) -30s infinite alternate}
-.ambient i:nth-child(2){right:-24vmax;bottom:-26vmax;background:radial-gradient(circle,rgba(160,70,105,.20),rgba(160,70,105,0) 62%);animation:drift2 120s var(--ease-io) -50s infinite alternate}
+.ambient i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;filter:blur(60px);opacity:.55;}
+.ambient i:nth-child(1){left:-20vmax;top:-18vmax;background:radial-gradient(circle,rgba(225,202,139,.42),rgba(225,202,139,0) 62%)}
+.ambient i:nth-child(2){right:-24vmax;bottom:-26vmax;background:radial-gradient(circle,rgba(160,70,105,.20),rgba(160,70,105,0) 62%)}
 .ambient::after{content:"";position:absolute;inset:0;opacity:.07;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .2 0 0 0 0 .25 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E")}
-@keyframes drift1{to{transform:translate3d(18vmax,22vmax,0) scale(1.15)}}
-@keyframes drift2{to{transform:translate3d(-22vmax,-16vmax,0) scale(1.1)}}
 
 /* ---------- botões ---------- */
 .btn{--bh:54px;position:relative;display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:var(--bh);padding:0 28px;border:0;border-radius:999px;font-family:var(--sans);font-weight:500;font-size:14px;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;cursor:pointer;white-space:nowrap;transition:transform .5s var(--ease-out),background-color .4s var(--ease-out),color .4s var(--ease-out),box-shadow .5s var(--ease-out)}
@@ -87,7 +85,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .link-quiet svg{width:18px;height:18px}
 .link-quiet:hover{border-color:currentColor}
 @media (pointer:coarse){.btn,.link-quiet{min-height:44px;display:inline-flex;align-items:center;justify-content:center}}
-@media (max-width:400px){.btn{padding:0 18px;letter-spacing:.08em;gap:9px}.btn-sm{padding:0 14px}.nav{gap:10px}.brand{gap:9px}.brand .mark{width:38px;height:38px}.brand b{font-size:17px}.static-hero .ctas .btn{max-width:100%}}
+@media (max-width:400px){.btn{padding:0 18px;letter-spacing:.08em;gap:9px}.btn-sm{padding:0 14px}.nav{gap:10px}.brand{gap:9px}.brand .mark{width:38px;height:38px}.brand b{font-size:17px}.capa .ctas .btn{max-width:100%}}
 @media (max-width:340px){.btn{font-size:12.5px;padding:0 14px}.btn svg{width:17px;height:17px}.dock .btn{font-size:11.5px;letter-spacing:.06em}}
 
 /* ---------- tipografia base ---------- */
@@ -122,113 +120,36 @@ button,input,select,textarea{font:inherit;color:inherit}
 @media (max-width:1060px){.nav ul{display:none}}
 @media (max-width:560px){.nav .long{display:none}.nav .short{display:inline}.brand small{display:none}.brand b{font-size:19px}}
 
-/* ---------- HERO: abertura guiada pela rolagem ---------- */
-.hero{position:relative;height:560vh;background:var(--canvas-2)}
-.stage{position:sticky;top:0;height:100vh;overflow:hidden;color:var(--ink)}
-.poster{position:absolute;inset:0;background:transparent center/cover no-repeat;transition:opacity .9s var(--ease-out)}
-.stage.video-ready .poster{opacity:0}
-.stage video{position:absolute;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none}
-.ceu{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.tampa-3d{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity 1s var(--ease-out)}
-.stage.video-ready .tampa-3d{opacity:1}
-.stage.video-failed .tampa-3d{display:none}
-.scrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(243,234,223,.8) 0%,rgba(243,234,223,.5) 30%,rgba(243,234,223,0) 56%)}
-.bands{position:absolute;inset:0;pointer-events:none}
-.band{position:absolute;left:var(--gut);top:calc(50% + 12px);transform:translateY(-50%);width:min(560px,38vw);opacity:0;text-shadow:0 0 22px rgba(243,234,223,.95);isolation:isolate}
-.band::before{content:"";position:absolute;inset:-34% -38% -34% -46%;z-index:-1;pointer-events:none;opacity:calc(.25 + .75*var(--k,1));background:radial-gradient(ellipse 62% 56% at 44% 50%,rgba(243,234,223,.8) 0%,rgba(243,234,223,.5) 46%,rgba(243,234,223,0) 76%)}
-.band .btn{text-shadow:none}
-.chip{display:inline-flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;background:rgba(250,246,239,.78);border:1px solid rgba(184,138,59,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);font:500 12px/1.3 var(--sans);letter-spacing:.24em;text-transform:uppercase;color:var(--gold-ink)}
+/* ---------- CAPA: abertura fixa, sem rolagem guiada ---------- */
+.capa{position:relative;display:flex;align-items:center;min-height:100vh;min-height:100svh;padding:calc(var(--nav-h) + clamp(28px,6vh,72px)) 0 clamp(72px,10vh,120px);overflow:hidden}
+.capa .wrap{display:grid;grid-template-columns:1.02fr .98fr;align-items:center;gap:clamp(36px,5vw,84px)}
+.chip{display:inline-flex;align-items:center;gap:10px;margin:0;padding:8px 14px;border-radius:10px;background:rgba(250,246,239,.78);border:1px solid rgba(184,138,59,.45);font:500 12px/1.3 var(--sans);letter-spacing:.24em;text-transform:uppercase;color:var(--gold-ink)}
 .chip svg{width:12px;height:12px}
-.hd{margin:22px 0 0;font-family:var(--display);font-weight:500;font-size:clamp(40px,4.6vw,78px);line-height:1.02;letter-spacing:-.015em;color:var(--ink)}
+.hd{margin:24px 0 0;font-family:var(--display);font-weight:500;font-size:clamp(44px,5.4vw,84px);line-height:1.02;letter-spacing:-.015em;color:var(--ink);text-wrap:balance}
 .hd em{font-style:italic;font-weight:400;color:var(--wine)}
-.hs{margin:22px 0 0;font-size:clamp(18px,1.45vw,22px);line-height:1.55;color:var(--text-2);max-width:34ch}
-.split .w{display:inline-block;position:relative;white-space:nowrap}
-.split .wi{display:inline-block}
-.b1 .w{--kc:clamp(0,(var(--k,0) - var(--th,0))*3,1)}
-.b1 .wi{opacity:var(--kc);transform:translateY(calc((1 - var(--kc))*18px))}
-.b1 .wi::after{content:attr(data-t);position:absolute;left:0;top:0;color:#9C7430;--d:calc(var(--g,0)*1.7 - .35 - var(--i,0));opacity:calc(1 - max(var(--d),calc(var(--d)*-1))*4.2);text-shadow:0 0 16px rgba(214,181,108,.5)}
-.b2 .slit{display:block;height:1px;width:min(360px,70%);margin:0 0 26px;background:linear-gradient(90deg,rgba(184,138,59,0),#B88A3B 30%,#B88A3B 70%,rgba(184,138,59,0));box-shadow:0 0 14px 1px rgba(214,181,108,.6);transform:scaleX(clamp(0,var(--k,0)*2.2,1));transform-origin:0 50%}
-.b2 .w{overflow:hidden;vertical-align:top;padding:.06em .06em .2em;margin:-.06em -.06em -.2em}
-.b2 .w{--kc:clamp(0,(var(--k,0) - .22 - var(--th,0))*2.6,1)}
-.b2 .wi{transform:translateY(calc((1 - var(--kc))*112%))}
-.b2 .hs,.b3 .hs{--ks:clamp(0,(var(--k,0) - .5)*3.2,1);opacity:var(--ks);transform:translateY(calc((1 - var(--ks))*14px))}
-.b3 .w{--kc:clamp(0,(var(--k,0) - var(--th,0))*2.4,1)}
-.b3 .wi{opacity:var(--kc);transform:translateY(calc((1 - var(--kc))*30px)) scale(calc(.94 + .06*var(--kc)))}
-.b4 .w{--kc:clamp(0,(var(--k,0) - var(--th,0))*2.8,1)}
-.b4 .wi{opacity:var(--kc);transform:translateY(calc((1 - var(--kc))*-26px))}
-.b4 .hs{--ks:clamp(0,(var(--k,0) - .55)*4,1);opacity:var(--ks);transform:translateY(calc((1 - var(--ks))*12px))}
-.b4 .ctas{--kb:clamp(0,(var(--k,0) - .7)*5,1);opacity:var(--kb);transform:translateY(calc((1 - var(--kb))*14px))}
-.ctas{display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px;margin-top:34px}
+.hs{margin:24px 0 0;font-size:clamp(18px,1.45vw,21px);line-height:1.6;color:var(--text-2);max-width:38ch;text-wrap:pretty}
+.ctas{display:flex;flex-wrap:wrap;align-items:center;gap:14px 26px;margin-top:36px}
 .ctas .link-quiet{color:var(--wine);font-size:16px}
-.bands .band.live-cta{pointer-events:auto}
-.cue{position:absolute;left:50%;bottom:clamp(20px,4vh,40px);display:flex;align-items:center;gap:12px;transform:translateX(-50%);white-space:nowrap;font:500 11.5px/1 var(--sans);letter-spacing:.3em;text-transform:uppercase;color:var(--gold-ink);transition:opacity .6s var(--ease-out)}
-.cue.gone{opacity:0}
-.ring{width:26px;height:26px;color:var(--gold-ink);transform:rotate(-90deg);transition:opacity .8s var(--ease-out)}
-.ring.done{opacity:0}
-.chev{width:16px;height:16px;animation:nudge 2.4s var(--ease-io) -1s infinite}
-@keyframes nudge{0%,100%{transform:translateY(-2px)}50%{transform:translateY(4px)}}
-.mono{position:absolute;left:var(--x,65%);top:var(--y,40%);width:var(--s,200px);height:var(--s,200px);transform:translate(-50%,-50%);pointer-events:none;opacity:var(--m,0);filter:drop-shadow(0 0 14px rgba(250,246,239,.9))}
-.mono .ringo{transform-origin:50% 50%;transform:rotate(calc((1 - var(--m,0))*-70deg))}
-.mono .draw{stroke-dasharray:1;stroke-dashoffset:calc(1 - var(--m,0))}
-.mono .gf{opacity:var(--m,0)}
-/* hero estático (celular, tablet em pé, movimento reduzido, sem JS) */
-.static-hero{display:none;position:relative;min-height:100vh;min-height:100svh;color:var(--ink);overflow:hidden;background:var(--canvas-2)}
-.static-hero .shot{position:absolute;inset:0;background-position:center 58%;background-size:cover;background-repeat:no-repeat}
-.static-hero .shot::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(243,234,223,.85) 0%,rgba(243,234,223,.45) 40%,rgba(243,234,223,0) 60%)}
-.static-hero .inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-start;min-height:100vh;min-height:100svh;padding:calc(var(--nav-h) + 28px) var(--gut) 40px}
-.static-hero .hd{font-size:clamp(40px,11vw,64px);max-width:12ch;text-shadow:0 0 22px rgba(243,234,223,.95)}
-.static-hero .hs{text-shadow:none}
-.static-hero .ctas{margin-top:auto;padding-top:28px}
-.static-hero .ctas .link-quiet{text-shadow:none}
-.static-hero .mono{display:none}
-@media (orientation: landscape) and (pointer: coarse) and (max-height: 560px){
-  .hero{height:auto}
-  .stage{display:none}
-  .static-hero{display:block}
-  .static-hero .shot{background-image:url('assets/hero-final.webp');background-position:center}
-  .static-hero .inner{justify-content:center;max-width:720px}
-  .static-hero .ctas{margin-top:34px}
-  .static-hero .mono{display:block}
+.fatos{display:flex;flex-wrap:wrap;gap:12px 0;margin:44px 0 0;padding:22px 0 0;list-style:none;border-top:1px solid var(--line)}
+.fatos li{display:flex;align-items:center;gap:9px;padding-right:16px;margin-right:16px;border-right:1px solid var(--line);font:500 11.5px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--gold-ink)}
+.fatos li:last-child{border-right:0;margin-right:0;padding-right:0}
+.fatos svg{width:18px;height:18px;flex:none;color:var(--gold)}
+/* vitrine: o selo da casa */
+.vitrine{position:relative;display:flex;flex-direction:column;align-items:center;width:min(580px,100%,calc((100vh - var(--nav-h) - 170px)/.9));min-width:min(380px,100%);justify-self:center}
+.vitrine .emblema{width:82%;aspect-ratio:1;margin-bottom:18px;filter:drop-shadow(0 0 16px rgba(250,246,239,.95))}
+.vitrine .tipos{display:flex;flex-wrap:wrap;justify-content:center;margin:2px 0 0;padding:0;list-style:none;font:500 12px/1.3 var(--sans);letter-spacing:.2em;text-transform:uppercase;color:var(--gold-ink)}
+.vitrine .tipos li+li::before{content:"\2726";margin:0 12px;color:var(--gold);font-size:10px}
+@media (max-width:900px){
+  .capa{min-height:0;padding-bottom:72px}
+  .capa .wrap{grid-template-columns:1fr;gap:40px}
+  .vitrine{width:min(460px,100%);min-width:0}
 }
-/* hero estático em pé (sem JavaScript): a mesma composição de antes */
-@media (orientation:portrait){
-  .static-hero .shot{background-image:url('assets/hero-mobile.webp');background-position:center bottom}
-  .static-hero .shot::after{background:linear-gradient(180deg,rgba(243,234,223,.8) 0%,rgba(243,234,223,.4) 40%,rgba(243,234,223,0) 58%)}
-  .static-hero .inner{justify-content:flex-start;max-width:none;min-height:max(100svh,850px,160vw)}
-  .static-hero .ctas{margin-top:30px}
+@media (max-width:560px){
+  .hd{font-size:clamp(38px,11vw,56px)}
+  .chip{letter-spacing:.14em;font-size:11px}
+  .fatos{margin-top:34px}
+  .fatos li{border-right:0;margin-right:0;padding-right:0;width:100%}
 }
-/* abertura animada em pé (celular e tablet): texto em cima, tampa embaixo */
-@media (orientation:portrait){
-  .scrim{background:linear-gradient(180deg,rgba(243,234,223,.9) 0%,rgba(243,234,223,.72) 32%,rgba(243,234,223,0) 56%)}
-  .band{left:var(--gut);right:var(--gut);top:calc(var(--nav-h) + clamp(14px,3.2vh,44px));transform:none;width:auto;max-width:600px}
-  .band::before{inset:-24% -12% -30% -12%;background:radial-gradient(ellipse 70% 62% at 42% 46%,rgba(243,234,223,.82) 0%,rgba(243,234,223,.5) 48%,rgba(243,234,223,0) 78%)}
-  .stage .chip{letter-spacing:.16em}
-  .stage .hd{font-size:clamp(33px,9.2vw,60px)}
-  .stage .hs{font-size:clamp(16.5px,4.3vw,20px);max-width:32ch;color:#4E3A43}   /* um tom mais escuro: a tampa passa por trás */
-  .stage .ctas{margin-top:24px;gap:12px 22px}
-}
-@media (orientation:portrait) and (max-width:380px){.stage .chip{font-size:11px;letter-spacing:.1em;padding:7px 12px}}
-@media (orientation:portrait) and (max-height:700px){
-  .stage .hd{font-size:clamp(29px,8.2vw,44px)}
-  .stage .hs{font-size:16px;margin-top:14px}
-}
-@media (prefers-reduced-motion: reduce){
-  html:not(.forcar-movimento) .hero{height:auto}
-  html:not(.forcar-movimento) .stage{display:none}
-  html:not(.forcar-movimento) .static-hero{display:block}
-  html:not(.forcar-movimento) .static-hero .shot{background-image:url('assets/hero-final.webp');background-position:center}
-  html:not(.forcar-movimento) .static-hero .inner{justify-content:center;max-width:720px}
-  html:not(.forcar-movimento) .static-hero .ctas{margin-top:34px}
-  html:not(.forcar-movimento) .static-hero .mono{display:block}
-  @media (orientation:portrait){
-    html:not(.forcar-movimento) .static-hero .shot{background-image:url('assets/hero-mobile.webp');background-position:center bottom}
-    html:not(.forcar-movimento) .static-hero .shot::after{background:linear-gradient(180deg,rgba(243,234,223,.8) 0%,rgba(243,234,223,.4) 40%,rgba(243,234,223,0) 58%)}
-    html:not(.forcar-movimento) .static-hero .inner{justify-content:flex-start;max-width:none;min-height:max(100svh,850px,160vw)}
-    html:not(.forcar-movimento) .static-hero .ctas{margin-top:30px}
-    html:not(.forcar-movimento) .static-hero .mono{display:none}
-  }
-}
-@media (max-height:560px){.cue{display:none}}
 
 /* ---------- selo entre a abertura e o site ---------- */
 .seal{position:relative;z-index:3;display:flex;align-items:center;justify-content:center;gap:18px;margin-top:-46px;height:92px;pointer-events:none}
@@ -294,21 +215,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 @media (max-width:900px){.how .grid{grid-template-columns:1fr}.frame{max-width:560px}.how .frame{position:relative;top:auto}}
 
 /* servido: a tampa que o visitante levanta */
-.served{background:radial-gradient(ellipse 80% 60% at 50% 38%,#4a1530 0%,var(--wine-deep) 55%,var(--wine-night) 100%);color:var(--cream);overflow:hidden}
+.served{background:radial-gradient(ellipse 70% 42% at 50% 0%,rgba(214,181,108,.18),rgba(214,181,108,0) 70%),radial-gradient(ellipse 80% 60% at 50% 38%,#4a1530 0%,var(--wine-deep) 55%,var(--wine-night) 100%);color:var(--cream);overflow:hidden}
+.served::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(rgba(225,202,139,.16) 1px,transparent 1.7px);background-size:26px 26px;-webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 45%,#000 15%,transparent 80%);mask-image:radial-gradient(ellipse 80% 70% at 50% 45%,#000 15%,transparent 80%)}
 .served .kicker{color:var(--gold-light)}
 .served .h2{color:var(--cream)}
 .served .h2 em{color:#F4DCA6}
 .served .lede{color:rgba(242,230,207,.78)}
-.velvet{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none;opacity:0;transition:opacity 1.4s var(--ease-out)}
-.velvet.on{opacity:1}
 .served .wrap{position:relative;z-index:1}
-.motes{position:absolute;inset:0;pointer-events:none}
-.motes i{position:absolute;bottom:-10px;width:4px;height:4px;border-radius:50%;background:#F4D99A;box-shadow:0 0 10px 2px rgba(244,217,154,.55);opacity:0}
-.live .motes i{animation:mote 14s linear infinite}
-.motes i:nth-child(1){left:12%;animation-delay:-2s}.motes i:nth-child(2){left:28%;animation-delay:-9s;animation-duration:17s}
-.motes i:nth-child(3){left:47%;animation-delay:-5s;animation-duration:19s}.motes i:nth-child(4){left:66%;animation-delay:-12s}
-.motes i:nth-child(5){left:81%;animation-delay:-7s;animation-duration:16s}.motes i:nth-child(6){left:92%;animation-delay:-14s;animation-duration:21s}
-@keyframes mote{0%{transform:translateY(0);opacity:0}12%{opacity:.8}80%{opacity:.5}100%{transform:translateY(-92vh);opacity:0}}
 .gallery{display:grid;grid-template-columns:1fr 1.3fr 1fr;align-items:center;gap:clamp(18px,3.4vw,52px);margin-top:clamp(52px,7vw,90px)}
 .pic{position:relative;margin:0;border-radius:999px 999px 18px 18px;overflow:hidden;aspect-ratio:3/4;border:1px solid rgba(225,202,139,.35);box-shadow:0 40px 70px -40px rgba(0,0,0,.8)}
 .pic img{width:100%;height:100%;object-fit:cover}
@@ -527,8 +440,6 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
 }
 </style>
 <noscript><style>
-.hero{height:auto}.stage{display:none}.static-hero{display:block}
-.static-hero .shot{background-image:url('assets/hero-mobile.webp')}
 .reveal .r{opacity:1;transform:none}
 .serve .lid{display:none}.serve .plate{transform:none}
 </style></noscript>
@@ -602,64 +513,29 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
 </header>
 
 <main id="main" tabindex="-1">
-  <section class="hero" id="inicio" aria-label="Abertura">
-    <div class="stage" id="stage">
-      <canvas class="ceu" id="ceu-hero" aria-hidden="true"></canvas>
-      <div class="poster" id="poster" aria-hidden="true"></div>
-      <canvas class="tampa-3d" id="tampa-3d" aria-hidden="true"></canvas>
-      <video id="hero" preload="none" muted playsinline aria-hidden="true" tabindex="-1"></video>
-      <div class="scrim" aria-hidden="true"></div>
-      <svg class="mono" id="mono" viewBox="0 0 240 240" aria-hidden="true">
-        <g class="ringo"><circle cx="120" cy="120" r="112" fill="none" stroke="#B88A3B" stroke-width="1.3" stroke-dasharray="1.2 4.6" stroke-linecap="round"/></g>
-        <circle class="draw" pathLength="1" cx="120" cy="120" r="102" fill="none" stroke="#B88A3B" stroke-width=".9" opacity=".75" transform="rotate(-90 120 120)"/>
-        <g class="gf"><g transform="translate(120 122) scale(.62) translate(-300 -304)"><use href="#tampa-logo" width="600" height="600"/><use href="#louros" width="600" height="600"/><text x="300" y="338" text-anchor="middle" font-family="'Bodoni Moda',Didot,Georgia,serif" font-style="italic" font-weight="500" font-size="124" letter-spacing="-2" fill="#5A1E3A">GF</text><path d="M254 370H346" stroke="#B88A3B" stroke-width="2.4" stroke-dasharray="1.5 3.5"/></g></g>
-      </svg>
-      <div class="bands" id="bands">
-        <div class="band b1" data-range="0,0.20">
-          <h1 class="chip"><svg aria-hidden="true"><use href="#i-estrela"/></svg>Buffet Glória Festas · desde 2010</h1>
-          <p class="hd split" data-split>Debaixo desta tampa, uma festa inteira.</p>
-        </div>
-        <div class="band b2" data-range="0.23,0.43">
-          <span class="slit" aria-hidden="true"></span>
-          <h2 class="hd split" data-split>Farta e quentinha, do primeiro ao último convidado.</h2>
-          <p class="hs">Festa boa é aquela em que ninguém ouve a palavra “acabou”.</p>
-        </div>
-        <div class="band b3" data-range="0.46,0.66">
-          <h2 class="hd split" data-split>A gente leva a festa até você.</h2>
-          <p class="hs">Na sua casa ou no salão que você escolher.</p>
-        </div>
-        <div class="band b4" data-range="0.70,1.00" data-ramp="0.09">
-          <h2 class="hd split" data-split>Realizando sonhos desde 2010.</h2>
-          <p class="hs">Buffet infantil, adulto, 15 anos e casamento em Nilópolis e região.</p>
-          <div class="ctas">
-            <a class="btn btn-wine" href="#orcamento"><svg aria-hidden="true"><use href="#i-tampa"/></svg>Solicite um orçamento</a>
-            <a class="link-quiet" href="https://wa.me/5521964166784" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-whats"/></svg>ou chame no WhatsApp</a>
-          </div>
-        </div>
-      </div>
-      <div class="cue" id="cue" aria-hidden="true">
-        <svg class="ring" id="ring" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="3"/><circle cx="24" cy="24" r="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="126" style="stroke-dashoffset:var(--ld,126)"/></svg>
-        <span>Role para servir</span>
-        <svg class="chev"><use href="#i-baixo"/></svg>
-      </div>
-    </div>
-
-    <div class="static-hero" id="static-hero">
-      <canvas class="ceu" id="ceu-estatico" aria-hidden="true"></canvas>
-      <div class="shot" aria-hidden="true"></div>
-      <svg class="mono" id="mono-static" viewBox="0 0 240 240" aria-hidden="true" style="--m:1">
-        <g class="ringo"><circle cx="120" cy="120" r="112" fill="none" stroke="#B88A3B" stroke-width="1.3" stroke-dasharray="1.2 4.6" stroke-linecap="round"/></g>
-        <circle cx="120" cy="120" r="102" fill="none" stroke="#B88A3B" stroke-width=".9" opacity=".75"/>
-        <g transform="translate(120 122) scale(.62) translate(-300 -304)"><use href="#tampa-logo" width="600" height="600"/><use href="#louros" width="600" height="600"/><text x="300" y="338" text-anchor="middle" font-family="'Bodoni Moda',Didot,Georgia,serif" font-style="italic" font-weight="500" font-size="124" letter-spacing="-2" fill="#5A1E3A">GF</text><path d="M254 370H346" stroke="#B88A3B" stroke-width="2.4" stroke-dasharray="1.5 3.5"/></g>
-      </svg>
-      <div class="inner">
-        <h1 class="chip"><svg aria-hidden="true"><use href="#i-estrela"/></svg>Buffet em Nilópolis, RJ</h1>
-        <h2 class="hd">Realizando sonhos desde 2010.</h2>
-        <p class="hs">Buffet infantil, adulto, 15 anos e casamento. A gente leva a festa até você.</p>
+  <section class="capa" id="inicio" aria-labelledby="capa-t">
+    <div class="wrap">
+      <div>
+        <p class="chip"><svg aria-hidden="true"><use href="#i-estrela"/></svg>Buffet Glória Festas · Nilópolis, RJ</p>
+        <h1 class="hd" id="capa-t">Realizando sonhos <em>desde 2010.</em></h1>
+        <p class="hs">Buffet infantil, adulto, 15 anos e casamento. A gente leva a festa farta e quentinha até a sua casa ou o salão que você escolher.</p>
         <div class="ctas">
           <a class="btn btn-wine" href="#orcamento"><svg aria-hidden="true"><use href="#i-tampa"/></svg>Solicite um orçamento</a>
           <a class="link-quiet" href="https://wa.me/5521964166784" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#i-whats"/></svg>ou chame no WhatsApp</a>
         </div>
+        <ul class="fatos">
+          <li><svg aria-hidden="true"><use href="#i-estrela"/></svg>Desde 2010</li>
+          <li><svg aria-hidden="true"><use href="#i-tampa"/></svg>Na sua casa ou no salão</li>
+          <li><svg aria-hidden="true"><use href="#i-escudo"/></svg>Nilópolis e região</li>
+        </ul>
+      </div>
+      <div class="vitrine" aria-hidden="true">
+        <svg class="emblema" viewBox="0 0 240 240">
+          <circle cx="120" cy="120" r="112" fill="none" stroke="#B88A3B" stroke-width="1.3" stroke-dasharray="1.2 4.6" stroke-linecap="round"/>
+          <circle cx="120" cy="120" r="102" fill="none" stroke="#B88A3B" stroke-width=".9" opacity=".75"/>
+          <g transform="translate(120 122) scale(.62) translate(-300 -304)"><use href="#tampa-logo" width="600" height="600"/><use href="#louros" width="600" height="600"/><text x="300" y="338" text-anchor="middle" font-family="'Bodoni Moda',Didot,Georgia,serif" font-style="italic" font-weight="500" font-size="124" letter-spacing="-2" fill="#5A1E3A">GF</text><path d="M254 370H346" stroke="#B88A3B" stroke-width="2.4" stroke-dasharray="1.5 3.5"/></g>
+        </svg>
+        <ul class="tipos"><li>Infantil</li><li>Adulto</li><li>15 anos</li><li>Casamento</li></ul>
       </div>
     </div>
   </section>
@@ -736,8 +612,6 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
   </section>
 
   <section class="section served reveal" id="fotos" aria-labelledby="fotos-t">
-    <canvas class="velvet" aria-hidden="true"></canvas>
-    <div class="motes" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="wrap center">
       <p class="kicker r"><svg aria-hidden="true"><use href="#i-estrela"/></svg>Direto das nossas festas<svg aria-hidden="true"><use href="#i-estrela"/></svg></p>
       <h2 class="h2 r" id="fotos-t" style="--d:1">Festa de verdade, <em>comida de verdade.</em></h2>
@@ -961,354 +835,18 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
   const RM = FORCE ? { matches: false, addEventListener() {} } : matchMedia('(prefers-reduced-motion: reduce)');
   const WA = '5521964166784';
 
-  /* ---------- 1. divide os títulos das faixas em palavras (uma vez) ---------- */
-  $$('[data-split]').forEach((el, n) => {
-    const text = el.textContent.trim();
-    const words = text.split(/\s+/);
-    const r = rng(1234 + n * 97);
-    el.textContent = '';
-    const sr = document.createElement('span'); sr.className = 'sr-only'; sr.textContent = text;
-    const vis = document.createElement('span'); vis.setAttribute('aria-hidden', 'true');
-    words.forEach((w, i) => {
-      const o = document.createElement('span'); o.className = 'w';
-      o.style.setProperty('--th', (i / words.length * 0.5 + r() * 0.04).toFixed(3));
-      o.style.setProperty('--i', (i / Math.max(1, words.length - 1)).toFixed(3));
-      const inn = document.createElement('span'); inn.className = 'wi'; inn.textContent = w; inn.dataset.t = w;
-      o.appendChild(inn); vis.appendChild(o);
-      if (i < words.length - 1) vis.appendChild(document.createTextNode(' '));
-    });
-    el.append(sr, vis);
-  });
-
-  /* ---------- 2. a abertura guiada pela rolagem ---------- */
-  const hero = $('#inicio'), stage = $('#stage'), video = $('#hero'), posterLayer = $('#poster');
-  const ring = $('#ring'), cue = $('#cue'), mono = $('#mono'), monoStatic = $('#mono-static');
-  const FRAME_W = 1920, FRAME_H = 1080, MONO_X = 0.65, MONO_Y = 0.405, MONO_S = 0.30;
-  // em pé (celular, tablet) a abertura usa um vídeo próprio: texto em cima, tampa embaixo, cor e recorte lado a lado
-  const RETRATO = matchMedia('(orientation: portrait)');
-  const VIDEOS = {
-    paisagem: { url: 'assets/hero-scrub.mp4', bytes: 1862349, fw: 1920, fh: 1080, lado: 0, capa: 'assets/hero-inicio.webp' },
-    retrato: { url: 'assets/hero-scrub-retrato.mp4', bytes: 928270, fw: 720, fh: 1280, lado: 1, capa: 'assets/hero-inicio-retrato.webp' }
-  };
-  const formato = () => RETRATO.matches ? 'retrato' : 'paisagem';
-  let vidFmt = null, pedindo = null, trocando = false;   // o vídeo que está no <video>, o que está a caminho, a troca em curso
-  const bands = $$('.band', stage).map(el => {
-    const [a, b] = el.dataset.range.split(',').map(Number);
-    return { el, a, b, ramp: el.dataset.ramp ? +el.dataset.ramp : null, op: -1, k: -1, g: -1, cta: null };
-  });
-  const lastI = bands.length - 1;
-  let heroTop = 0, heroRange = 1, heroOnScreen = true;
-  function measure() {
-    heroTop = hero.getBoundingClientRect().top + scrollY;
-    heroRange = Math.max(1, hero.offsetHeight - innerHeight);
-    if (RETRATO.matches) placeMonoRetrato(); else { mono.style.visibility = ''; placeMono(mono, stage.clientWidth, stage.clientHeight); }
-    medirCapa();
-    if (comp) { medirCompositor(); desenharQuadro(); }
-    const sh = $('#static-hero');
-    if (sh && sh.offsetParent) placeMono(monoStatic, sh.clientWidth, sh.clientHeight);
-  }
-  function placeMono(el, W, H) {
-    if (!el || !W || !H) return;
-    const s = Math.max(W / FRAME_W, H / FRAME_H), dw = FRAME_W * s, dh = FRAME_H * s;
-    const x = (W - dw) / 2 + MONO_X * dw, y = (H - dh) / 2 + MONO_Y * dh;
-    el.style.setProperty('--x', x.toFixed(1) + 'px');
-    el.style.setProperty('--y', y.toFixed(1) + 'px');
-    el.style.setProperty('--s', (MONO_S * dh).toFixed(1) + 'px');
-  }
-  const BANDEJA_R = .711;                             // em pé: a borda da bandeja no último quadro (fração da altura)
-  function placeMonoRetrato() {                        // em pé o selo GF entra no espaço entre o texto e a bandeja
-    const W = stage.clientWidth, H = stage.clientHeight;
-    if (!W || !H) return;
-    const V = VIDEOS.retrato, r = recorte(V, W, H), dw = V.fw * r.k, dh = V.fh * r.k;
-    const limite = (BANDEJA_R + .03 - r.y0) * dh;        // como no computador, o selo encosta de leve na borda de trás da bandeja
-    const fimTexto = bands[lastI].el.getBoundingClientRect().bottom - stage.getBoundingClientRect().top + 16;
-    const livre = limite - fimTexto;
-    const t = Math.max(76, Math.min(livre * .92, dw * .44, 250));
-    const y = limite - t / 2 - Math.max(0, livre - t) * .3;   // mais perto da bandeja do que do texto
-    mono.style.visibility = livre < 64 ? 'hidden' : '';       // tela baixa demais: melhor sem o selo do que em cima do botão
-    mono.style.setProperty('--x', ((.5 - r.x0) * dw).toFixed(1) + 'px');
-    mono.style.setProperty('--y', y.toFixed(1) + 'px');
-    mono.style.setProperty('--s', t.toFixed(1) + 'px');
-  }
-  const heroProgress = () => clamp((scrollY - heroTop) / heroRange, 0, 1);
-
-  // seeks travados: nunca escrever currentTime com outro seek em voo
-  let seekBusy = false, pendingTime = null;
-  // um salto por quadro do vídeo: durante a desaceleração da rolagem o valor muda um pouquinho a cada instante,
-  // mas se cair no mesmo quadro não há nada novo para decodificar (antes eram dezenas de saltos repetidos)
-  const FPS = 30;
-  let quadroAtual = -1;
-  function seekQuadro(p) {
-    if (!video.duration) return;
-    const n = Math.max(1, Math.round(video.duration * FPS)), i = Math.min(n - 1, Math.round(p * (n - 1)));
-    if (i === quadroAtual) return;
-    quadroAtual = i;
-    requestSeek(Math.min(video.duration - .001, (i + .5) / FPS));
-  }
-  function requestSeek(t) {
-    if (!video.duration) return;
-    if (seekBusy) { pendingTime = t; return; }
-    seekBusy = true;
-    video.currentTime = t;
-  }
-  video.addEventListener('seeked', () => {
-    desenharQuadro();
-    seekBusy = false;
-    if (pendingTime !== null) { const t = pendingTime; pendingTime = null; requestSeek(t); }
-  });
-  video.addEventListener('error', () => { seekBusy = false; pendingTime = null; failVideo(); });
-
-  // faixas: opacidade em smoothstep e progresso de montagem --k, escritas só na mudança
-  let loadK = 0, monoM = -1;
-  function updateCaptions(p) {
-    bands.forEach((B, i) => {
-      const { a, b } = B;
-      const f = Math.min(0.02, (b - a) / 3);
-      let op = (i === 0 ? 1 : smoothstep(p, a, a + f)) * (i === lastI ? 1 : 1 - smoothstep(p, b - f, b));
-      let k = clamp((p - a) / (B.ramp || Math.min(0.025, (b - a) * 0.35)), 0, 1);
-      if (i === 0) k = Math.max(k, loadK);
-      op = Math.round(op * 1000) / 1000;
-      if (Math.abs(op - B.op) > 0.004) { B.op = op; B.el.style.opacity = op; }
-      if (Math.abs(k - B.k) > 0.008 || (k === 1 && B.k !== 1) || (k === 0 && B.k !== 0)) { B.k = k; B.el.style.setProperty('--k', k.toFixed(3)); }
-      if (i === 0) {
-        const g = clamp(p / b, 0, 1);
-        if (Math.abs(g - B.g) > 0.006) { B.g = g; B.el.style.setProperty('--g', g.toFixed(3)); }
-      }
-      if (i === lastI) {
-        const live = op > 0.55;
-        if (live !== B.cta) { B.cta = live; B.el.classList.toggle('live-cta', live); }
-        const m = clamp((k - 0.05) * 1.6, 0, 1);
-        if (Math.abs(m - monoM) > 0.006 || (m === 1 && monoM !== 1) || (m === 0 && monoM !== 0)) { monoM = m; mono.style.setProperty('--m', m.toFixed(3)); }
-      }
-    });
-    const gone = p > 0.03;
-    if (gone !== cueGone) { cueGone = gone; cue.classList.toggle('gone', gone); }
-  }
-  let cueGone = false;
-
-  // interpolação normalizada por dt; o loop descansa quando converge
-  let target = 0, shown = 0, rafId = null, lastTick = 0;
-  function tick(now) {
-    const dt = Math.min(100, now - (lastTick || now));
-    lastTick = now;
-    const k = 0.14;
-    shown += (target - shown) * (1 - Math.pow(1 - k, dt / 16.667));
-    if (Math.abs(target - shown) < 0.0004) { shown = target; rafId = null; lastTick = 0; }
-    else rafId = requestAnimationFrame(tick);
-    seekQuadro(shown);
-    updateCaptions(shown);
-  }
-  let ultimoY = scrollY;
-  function onScroll() {
-    target = heroProgress();
-    if (ceuHero) ceuHero.empurrar(Math.abs(scrollY - ultimoY));   // rolar a página acelera a viagem pelas estrelas
-    ultimoY = scrollY;
-    if (rafId === null && heroOnScreen) rafId = requestAnimationFrame(tick);
-  }
-
-  // compositor da tampa: o vídeo traz a cor em cima e o recorte (alfa) embaixo; a placa de vídeo junta os dois
-  const tampaCv = $('#tampa-3d');
-  let comp = null, cob = [0, 0, 1, 1];
-  let ceuHero = null, grao = null;
-  function iniciarCompositor() {
-    if (comp) return comp;
-    const g = tampaCv.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: false });
-    if (!g) return null;
-    const sh = (tipo, src) => { const x = g.createShader(tipo); g.shaderSource(x, src); g.compileShader(x); return g.getShaderParameter(x, g.COMPILE_STATUS) ? x : null; };
-    const vs = sh(g.VERTEX_SHADER, 'attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;gl_Position=vec4(p,0.,1.);}');
-    const fs = sh(g.FRAGMENT_SHADER, 'precision mediump float;varying vec2 uv;uniform sampler2D tex;uniform vec4 cob;uniform float lim,lado;' +
-      'void main(){vec2 f=cob.xy+uv*cob.zw;vec3 c;float a;' +
-      'if(lado>.5){c=texture2D(tex,vec2(clamp(f.x*.5,0.,.5-lim),f.y)).rgb;a=texture2D(tex,vec2(clamp(.5+f.x*.5,.5+lim,1.),f.y)).r;}' +   // em pé: cor à esquerda, recorte à direita
-      'else{c=texture2D(tex,vec2(f.x,clamp(.5+f.y*.5,.5+lim,1.))).rgb;a=texture2D(tex,vec2(f.x,clamp(f.y*.5,0.,.5-lim))).r;}' +
-      'gl_FragColor=vec4(c,a);}');
-    if (!vs || !fs) return null;
-    const prog = g.createProgram(); g.attachShader(prog, vs); g.attachShader(prog, fs); g.linkProgram(prog);
-    if (!g.getProgramParameter(prog, g.LINK_STATUS)) return null;
-    g.useProgram(prog);
-    const buf = g.createBuffer(); g.bindBuffer(g.ARRAY_BUFFER, buf);
-    g.bufferData(g.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), g.STATIC_DRAW);
-    const loc = g.getAttribLocation(prog, 'p'); g.enableVertexAttribArray(loc); g.vertexAttribPointer(loc, 2, g.FLOAT, false, 0, 0);
-    const tex = g.createTexture(); g.bindTexture(g.TEXTURE_2D, tex);
-    g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL, true);
-    [[g.TEXTURE_MIN_FILTER, g.LINEAR], [g.TEXTURE_MAG_FILTER, g.LINEAR], [g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE], [g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE]].forEach(([k, v]) => g.texParameteri(g.TEXTURE_2D, k, v));
-    comp = { g, uCob: g.getUniformLocation(prog, 'cob'), uLim: g.getUniformLocation(prog, 'lim'), uLado: g.getUniformLocation(prog, 'lado') };
-    return comp;
-  }
-  function recorte(V, W, H) {                          // o mesmo corte do "cover", com o foco puxado para a tampa
-    const k = Math.max(W / V.fw, H / V.fh), fw = (W / k) / V.fw, fh = (H / k) / V.fh, asp = W / H;
-    const fx = V.lado ? .5 : (asp >= 1.25 ? .5 : .5 + (1.25 - asp) * .4);   // janela quase quadrada: não corta a tampa
-    const fy = V.lado ? .6 : .5;                       // tablet em pé: o corte guarda a bandeja, que fica embaixo
-    return { k, fw, fh, x0: clamp(fx - fw / 2, 0, 1 - fw), y0: clamp(fy - fh / 2, 0, 1 - fh) };
-  }
-  function medirCompositor() {
-    const dpr = Math.min(2, devicePixelRatio || 1), W = stage.clientWidth, H = stage.clientHeight;
-    tampaCv.width = Math.max(1, Math.round(W * dpr)); tampaCv.height = Math.max(1, Math.round(H * dpr));
-    const r = recorte(VIDEOS[vidFmt || formato()], W, H);
-    cob = [r.x0, 1 - r.y0 - r.fh, r.fw, r.fh];         // na textura o y cresce de baixo para cima
-  }
-  function medirCapa() {                               // a capa (antes do vídeo chegar) no mesmo corte do vídeo
-    const V = VIDEOS[formato()], W = stage.clientWidth, H = stage.clientHeight;
-    if (!W || !H) return;
-    const r = recorte(V, W, H);
-    posterLayer.style.backgroundSize = `${(V.fw * r.k).toFixed(1)}px ${(V.fh * r.k).toFixed(1)}px`;
-    posterLayer.style.backgroundPosition = `${(-r.x0 * V.fw * r.k).toFixed(1)}px ${(-r.y0 * V.fh * r.k).toFixed(1)}px`;
-  }
-  function desenharQuadro() {
-    if (!comp || trocando || video.readyState < 2) return;
-    const g = comp.g;
-    g.viewport(0, 0, tampaCv.width, tampaCv.height);
-    g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, video);
-    g.uniform4f(comp.uCob, cob[0], cob[1], cob[2], cob[3]);
-    const V = VIDEOS[vidFmt || 'paisagem'];
-    g.uniform1f(comp.uLim, V.lado ? .5 / (V.fw * 2) : .5 / (V.fh * 2));
-    g.uniform1f(comp.uLado, V.lado);
-    g.clearColor(0, 0, 0, 0); g.clear(g.COLOR_BUFFER_BIT);
-    g.drawArrays(g.TRIANGLE_STRIP, 0, 4);
-  }
-
-  // carregador de Blob transmitido com anel honesto
-  let started = false, initDone = false, videoOk = false, urlAtual = null;
-  function startBlobFetch() {
-    if (started) return;
-    started = true;
-    carregarVideo(formato());
-  }
-  function carregarVideo(fmt) {                        // se a tela girar no meio do caminho, o último pedido vence
-    pedindo = fmt;
-    loadHeroBlob(fmt).catch(() => { if (pedindo === fmt) pedindo = null; if (!videoOk) failVideo(); });
-  }
-  async function loadHeroBlob(fmt) {
-    const V = VIDEOS[fmt];
-    const ctrl = new AbortController();
-    let watchdog = setTimeout(() => ctrl.abort(), 20000);
-    const res = await fetch(V.url, { priority: 'low', signal: ctrl.signal });
-    if (!res.ok) throw new Error('video ' + res.status);
-    const total = Number(res.headers.get('Content-Length')) || V.bytes;
-    const reader = res.body.getReader();
-    const chunks = [];
-    let got = 0, lastRing = 0;
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      clearTimeout(watchdog);
-      watchdog = setTimeout(() => ctrl.abort(), 20000);
-      chunks.push(value);
-      got += value.length;
-      const frac = Math.min(1, got / total);
-      const now = performance.now();
-      if (now - lastRing > 100 || frac === 1) { lastRing = now; ring.style.setProperty('--ld', Math.round(126 * (1 - frac))); }
-    }
-    clearTimeout(watchdog);
-    ring.style.setProperty('--ld', 0);
-    if (pedindo !== fmt) return;                       // a tela girou de novo antes do fim: este vídeo já não serve
-    const url = URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
-    trocando = true; seekBusy = false; pendingTime = null;
-    video.addEventListener('canplay', () => {
-      trocando = false;
-      video.pause();
-      if (!iniciarCompositor()) { failVideo(); return; }
-      if (urlAtual) URL.revokeObjectURL(urlAtual);
-      urlAtual = url; vidFmt = fmt;
-      if (pedindo === fmt) pedindo = null;
-      medirCompositor();
-      videoOk = true;
-      desenharQuadro();
-      quadroAtual = -1; seekQuadro(heroProgress());
-      stage.classList.add('video-ready');
-      setTimeout(() => ring.classList.add('done'), 500);
-      if (formato() !== vidFmt && pedindo === null) { stage.classList.remove('video-ready'); carregarVideo(formato()); }   // girou durante a troca
-    }, { once: true });
-    video.preload = 'auto';
-    video.src = url;
-    video.load();
-    const p = video.play();                            // alguns celulares só preparam os quadros depois de um play (mudo e invisível)
-    if (p && p.catch) p.catch(() => {});
-  }
-  function failVideo() {
-    ring.classList.add('done');
-    stage.classList.add('video-failed');
-  }
-  function initHeroOnce() {
-    if (initDone) return;
-    initDone = true;
-    const capa = VIDEOS[formato()].capa;
-    posterLayer.style.backgroundImage = `url('${capa}')`;
-    medirCapa();
-    const img = new Image();
-    img.onload = startBlobFetch; img.onerror = startBlobFetch;
-    img.src = capa;
-    setTimeout(startBlobFetch, 4000);
-  }
-  RETRATO.addEventListener('change', () => {           // girou o tablet ou mudou a janela: troca pelo vídeo do formato novo
-    if (!initDone) return;
-    const fmt = formato();
-    posterLayer.style.backgroundImage = `url('${VIDEOS[fmt].capa}')`;
-    if (fmt !== vidFmt) { if (fmt !== pedindo && started) { stage.classList.remove('video-ready'); carregarVideo(fmt); } }
-    else if (pedindo) { pedindo = null; if (!trocando) stage.classList.add('video-ready'); }
-    measure();
-  });
-
-  // rampa de carregamento: a primeira faixa abre montada, depois passa o bastão para a rolagem
-  function runLoadRamp() {
-    const t0 = performance.now(), D = 1300;
-    const step = now => {
-      const x = clamp((now - t0) / D, 0, 1);
-      loadK = 1 - Math.pow(1 - x, 3);
-      updateCaptions(shown);
-      if (x < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }
-
-  // os portões do hero estático (celular deitado e movimento reduzido), idênticos aos do CSS e vivos
-  const GATES = [
-    '(orientation: landscape) and (pointer: coarse) and (max-height: 560px)',
-    '(prefers-reduced-motion: reduce)'
-  ].filter(q => !(FORCE && q === '(prefers-reduced-motion: reduce)'));
-  const MQLS = GATES.map(q => matchMedia(q));
-  let scrubOn = false;
-  function enableScrub() {
-    if (scrubOn) return; scrubOn = true;
-    initHeroOnce();
-    addEventListener('scroll', onScroll, { passive: true });
-    bands.forEach(B => { B.op = -1; B.k = -1; B.g = -1; B.cta = null; });
-    monoM = -1;
-    unpinFinalStates();
-    measure();
-    shown = target = heroProgress();
-    updateCaptions(shown);
-    onScroll();
-    if (videoOk) { quadroAtual = -1; seekQuadro(shown); }
-  }
-  function disableScrub() {
-    if (!scrubOn) return; scrubOn = false;
-    removeEventListener('scroll', onScroll);
-    if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; lastTick = 0; }
-  }
-  function applyHeroMode() {
-    if (MQLS.some(m => m.matches)) disableScrub(); else enableScrub();
-    requestAnimationFrame(measure);
-  }
-  MQLS.forEach(m => m.addEventListener('change', applyHeroMode));
-  new IntersectionObserver(es => es.forEach(e => {
-    heroOnScreen = e.isIntersecting;
-    if (heroOnScreen && scrubOn) onScroll();
-  })).observe(hero);
-  addEventListener('resize', () => { measure(); if (scrubOn) onScroll(); }, { passive: true });
+  const hero = $('#inicio');
 
   /* ---------- 3. navegação, barra do celular, linhas que se desenham ---------- */
   const nav = $('#topo'), dock = $('#dock'), quote = $('#orcamento');
   const draws = $$('[data-draw]').map(el => ({ el, box: el.closest('svg'), v: -1, pinned: false }));
   let navSolid = null, dockShow = null, quoteInView = false, scrollQueued = false;
-  const fotosSec = $('#fotos'), rodape = $('#rodape');
-  const cobreTudo = el => { if (!el) return false; const r = el.getBoundingClientRect(); return r.top <= 0 && r.bottom >= innerHeight; };
   function onPageScroll() {
     if (scrollQueued) return;
     scrollQueued = true;
     requestAnimationFrame(() => {
       scrollQueued = false;
       const heroEnd = hero.getBoundingClientRect().bottom;
-      if (grao) grao.ativar(heroEnd < innerHeight - 1 && !cobreTudo(fotosSec) && !cobreTudo(rodape));   // parado atrás da abertura e das seções escuras
       const solid = heroEnd < 90;
       if (solid !== navSolid) { navSolid = solid; nav.classList.toggle('solid', solid); }
       const show = heroEnd < innerHeight * 0.4 && !quoteInView;
@@ -1502,79 +1040,8 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
     });
   })();
 
-  /* ---------- 12. viagem pelas estrelas (feedbacks e abertura): segure o clique para acelerar ---------- */
-  function criarViagem(host, cv, o = {}) {
-    if (!host || !cv) return null;
-    const ctx = cv.getContext('2d');
-    const CORES = [[184, 138, 59], [214, 181, 108], [201, 160, 88], [90, 30, 58]];   // dourado, champanhe, ouro velho, vinho
-    const CX = o.cx ?? .5, CY = o.cy ?? .56, BASE = 1.8;
-    let W = 1, H = 1, estrelas = [], vel = BASE, alvoVel = BASE, extra = 0, id = null, visivel = false, ultimo = 0, ativo = true;
-    function medir() {
-      const dpr = Math.min(1.5, devicePixelRatio || 1);
-      W = Math.max(1, host.clientWidth); H = Math.max(1, host.clientHeight);
-      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    const fundo = () => Math.max(W, H);
-    function nascerUma(e, longe) {                      // cada estrela tem uma profundidade (z) que diminui a cada quadro
-      e.x = (Math.random() - .5) * W * 1.6; e.y = (Math.random() - .5) * H * 1.6;
-      e.z = longe ? fundo() : Math.random() * fundo(); e.pz = e.z;
-      e.c = CORES[Math.random() < .16 ? 3 : (Math.random() * 3) | 0];
-      e.s = Math.random() < .17; e.g = Math.random() * 6.28;   // algumas viram a estrelinha de 4 pontas do logo
-      return e;
-    }
-    function nascer() { estrelas = []; const n = Math.round(Math.min(260, W * H / 5200)); for (let i = 0; i < n; i++) estrelas.push(nascerUma({}, false)); }
-    function quadro(agora, parado) {
-      const f = parado ? 1 : Math.min(3, (agora - (ultimo || agora)) / 16.667); ultimo = agora;
-      vel += (alvoVel - vel) * (1 - Math.pow(1 - .08, f));
-      extra *= Math.pow(.9, f);
-      const v = vel + extra;
-      ctx.globalCompositeOperation = 'destination-out';            // rastro leve: apaga um pouco, sem pintar por cima do creme
-      ctx.fillStyle = parado ? '#000' : 'rgba(0,0,0,.3)';
-      ctx.fillRect(0, 0, W, H);
-      ctx.globalCompositeOperation = 'source-over';
-      const cx = W * (typeof CX === 'function' ? CX() : CX), cy = H * (typeof CY === 'function' ? CY() : CY), D = fundo(), foco = Math.min(W, H) * .5;
-      for (const e of estrelas) {
-        e.pz = e.z;
-        if (!parado) e.z -= v * 4 * f;
-        if (e.z < 1) { nascerUma(e, true); continue; }
-        const k = foco / e.z, ka = foco / e.pz;                   // dividir a posição pela profundidade cria a perspectiva
-        const x = cx + e.x * k, y = cy + e.y * k, xa = cx + e.x * ka, ya = cy + e.y * ka;
-        if (x < -30 || x > W + 30 || y < -30 || y > H + 30) { nascerUma(e, true); continue; }
-        const brilho = Math.min(1, Math.max(.05, 1 - e.z / D));
-        const [r, g, b] = e.c, a = Math.max(.14, Math.pow(brilho, .7) * .9).toFixed(3);
-        if (Math.abs(x - xa) + Math.abs(y - ya) < .6) { ctx.fillStyle = `rgba(${r},${g},${b},${a})`; ctx.beginPath(); ctx.arc(x, y, .5 + brilho * 1.3, 0, 6.2832); ctx.fill(); }
-        else { ctx.strokeStyle = `rgba(${r},${g},${b},${a})`; ctx.lineWidth = .6 + brilho * 2; ctx.beginPath(); ctx.moveTo(xa, ya); ctx.lineTo(x, y); ctx.stroke(); }
-        if (e.s && brilho > .25) {                                  // a cabeça vira uma estrelinha de 4 pontas
-          const t = 1.2 + brilho * 5.5; e.g += .01 * f;
-          ctx.save(); ctx.translate(x, y); ctx.rotate(e.g); ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
-          ctx.beginPath(); ctx.moveTo(0, -t); ctx.quadraticCurveTo(t * .14, -t * .14, t, 0); ctx.quadraticCurveTo(t * .14, t * .14, 0, t); ctx.quadraticCurveTo(-t * .14, t * .14, -t, 0); ctx.quadraticCurveTo(-t * .14, -t * .14, 0, -t); ctx.fill(); ctx.restore();
-        }
-      }
-    }
-    const rodar = agora => { quadro(agora, false); id = requestAnimationFrame(rodar); };
-    const ligar = () => { if (id !== null || RM.matches || !visivel || !ativo) return; ultimo = 0; id = requestAnimationFrame(rodar); };
-    const desligar = () => { if (id === null) return; cancelAnimationFrame(id); id = null; };
-    new IntersectionObserver(es => { visivel = es[0].isIntersecting; visivel ? ligar() : desligar(); }).observe(host);   // só roda com a área na tela
-    new ResizeObserver(() => { medir(); nascer(); if (id === null) quadro(performance.now(), true); }).observe(host);
-    (o.gatilho || host).addEventListener('pointerdown', e => { if (o.filtro && !o.filtro(e)) return; if (e.pointerType !== 'mouse' || e.button === 0) alvoVel = 7; });   // segurar acelera
-    addEventListener('pointerup', () => { alvoVel = BASE; });
-    addEventListener('pointercancel', () => { alvoVel = BASE; });
-    RM.addEventListener('change', e => { if (e.matches) { desligar(); quadro(performance.now(), true); } else ligar(); });
-    medir(); nascer(); quadro(performance.now(), true);          // movimento reduzido: céu parado
-    return {
-      empurrar(px) { if (!RM.matches) extra = Math.min(9, extra + px / 45); },
-      ativar(v) { if (v === ativo) return; ativo = v; v ? ligar() : desligar(); }
-    };
-  }
+  /* ---------- 5c. fundo Grainient (React Bits), em JS puro e nas cores do site: um quadro só, parado ---------- */
   (() => {
-    ceuHero = criarViagem(stage, $('#ceu-hero'), { cx: () => RETRATO.matches ? .5 : .64, cy: () => RETRATO.matches ? .7 : .56 });
-    criarViagem($('#static-hero'), $('#ceu-estatico'), { cx: .5, cy: .74 });
-    onPageScroll();
-  })();
-
-  /* ---------- 5c. fundo Grainient (React Bits) nas seções depois da abertura, em JS puro e nas cores do site ---------- */
-  grao = (() => {
     const amb = $('.ambient'), cv = document.createElement('canvas');
     cv.className = 'grao'; cv.setAttribute('aria-hidden', 'true');
     const op = { alpha: false, antialias: false, depth: false, stencil: false, powerPreference: 'low-power' };
@@ -1642,7 +1109,7 @@ void main(){
       return true;
     }
     if (!iniciar()) return null;
-    let t = 0, ultimo = 0, id = null, ativo = false;
+    const t = 6;                                          // o fundo não anda: um instante fixo do degradê
     function medir() {
       const w = Math.max(1, cv.clientWidth), h = Math.max(1, cv.clientHeight);
       let d = Math.min(1.5, devicePixelRatio || 1);
@@ -1651,23 +1118,12 @@ void main(){
       gl.viewport(0, 0, cv.width, cv.height);
     }
     function desenhar() { gl.uniform2f(uRes, cv.width, cv.height); gl.uniform1f(uTime, t); gl.drawArrays(gl.TRIANGLES, 0, 3); }
-    const rodar = agora => {
-      id = requestAnimationFrame(rodar);
-      if (!ultimo) { ultimo = agora; return; }
-      if (agora - ultimo < 32) return;                    // 30 quadros por segundo bastam para um degradê lento
-      t += Math.min(agora - ultimo, 100) / 1000; ultimo = agora;   // o tempo só anda com o fundo à vista: nada pula ao voltar
-      desenhar();
-    };
-    const ligar = () => { if (id !== null || !ativo || RM.matches) return; ultimo = 0; id = requestAnimationFrame(rodar); };
-    const desligar = () => { if (id === null) return; cancelAnimationFrame(id); id = null; };
     amb.appendChild(cv);
     medir(); desenhar();
     amb.classList.add('com-grao'); cv.classList.add('on');
     new ResizeObserver(() => { medir(); desenhar(); }).observe(cv);
-    RM.addEventListener('change', e => { if (e.matches) { desligar(); desenhar(); } else ligar(); });   // movimento reduzido: quadro parado
-    cv.addEventListener('webglcontextlost', e => { e.preventDefault(); desligar(); amb.classList.remove('com-grao'); });
-    cv.addEventListener('webglcontextrestored', () => { if (iniciar()) { medir(); desenhar(); amb.classList.add('com-grao'); ligar(); } });
-    return { ativar(v) { if (v === ativo) return; ativo = v; v ? ligar() : desligar(); } };
+    cv.addEventListener('webglcontextlost', e => { e.preventDefault(); amb.classList.remove('com-grao'); });
+    cv.addEventListener('webglcontextrestored', () => { if (iniciar()) { medir(); desenhar(); amb.classList.add('com-grao'); } });
   })();
 
   /* ---------- 6. dúvidas ---------- */
@@ -1848,105 +1304,14 @@ void main(){
   }
   RM.addEventListener('change', e => {
     if (e.matches) pinToFinalStates();
-    else { unpinFinalStates(); if (opened && serveWrap.dataset.auto === '1') { resetServe(); delete serveWrap.dataset.auto; } applyHeroMode(); }
+    else { unpinFinalStates(); if (opened && serveWrap.dataset.auto === '1') { resetServe(); delete serveWrap.dataset.auto; } }
   });
   if (RM.matches) pinToFinalStates();
 
 
-  /* ---------- 9. fundo de veludo com shader (seção de fotos) ---------- */
-  (() => {
-    const sec = $('#fotos'), cv = $('.velvet', sec);
-    if (!cv) return;
-    const gl = cv.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'low-power' }) || cv.getContext('experimental-webgl');
-    if (!gl) return;                                   // placa antiga: fica o degradê do CSS
-    const vertice = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
-    const pixel = [
-      'precision highp float;',
-      'uniform vec2 tela; uniform float t; uniform vec2 mouse; uniform float forca;',
-      /* ondas somadas em escalas diferentes: a receita de nuvem, aqui virando veludo */
-      'float onda(vec2 p){ return sin(p.x*1.7+t*.45)*cos(p.y*1.3-t*.35); }',
-      'float ruido(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }',
-      'void main(){',
-      '  vec2 uv = gl_FragCoord.xy / tela;',
-      '  vec2 asp = vec2(tela.x / tela.y, 1.);',
-      '  vec2 q = uv * asp * 2.4;',
-      '  float f = onda(q) + .5*onda(q*2.1+t*.25) + .25*onda(q*4.3-t*.18);',
-      '  float luz = exp(-distance(uv*asp, mouse*asp) * 2.8) * forca;',
-      '  vec3 noite = vec3(.100,.024,.052);',        /* vinho quase noite */
-      '  vec3 vinho = vec3(.300,.085,.180);',        /* o vinho do logo */
-      '  vec3 rosa  = vec3(.500,.170,.290);',        /* o realce do veludo */
-      '  vec3 ouro  = vec3(.722,.541,.231);',        /* o dourado do logo */
-      '  vec3 champ = vec3(.930,.800,.550);',        /* a luz da tampa */
-      '  vec3 c = mix(noite, vinho, smoothstep(-1., 1.5, f));',
-      '  c = mix(c, rosa, smoothstep(.75, 1.55, f) * .55);',  /* dobras do veludo pegando luz */
-      '  c = mix(c, ouro, smoothstep(1.3, 1.75, f) * .35);',   /* brilho dourado raro nas cristas */
-      '  c = 1. - (1. - c) * (1. - champ * luz * .42);',       /* a luz dourada segue o mouse, sem sujar a cor */
-      '  float borda = smoothstep(0., .16, uv.y) * smoothstep(1., .84, uv.y);',
-      '  c = mix(noite, c, .6 + .4 * borda);',
-      '  c += (ruido(gl_FragCoord.xy + fract(t)) - .5) / 255.;', /* grão fino contra faixas */
-      '  gl_FragColor = vec4(c, 1.);',
-      '}'
-    ].join('\n');
-    const compilar = (tipo, fonte) => { const sh = gl.createShader(tipo); gl.shaderSource(sh, fonte); gl.compileShader(sh); return gl.getShaderParameter(sh, gl.COMPILE_STATUS) ? sh : null; };
-    const vs = compilar(gl.VERTEX_SHADER, vertice), fs = compilar(gl.FRAGMENT_SHADER, pixel);
-    if (!vs || !fs) return;
-    const prog = gl.createProgram();
-    gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
-    gl.useProgram(prog);
-    const buf = gl.createBuffer();                     // dois triângulos cobrindo a área toda
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-    const pLoc = gl.getAttribLocation(prog, 'p');
-    gl.enableVertexAttribArray(pLoc);
-    gl.vertexAttribPointer(pLoc, 2, gl.FLOAT, false, 0, 0);
-    const uTela = gl.getUniformLocation(prog, 'tela'), uT = gl.getUniformLocation(prog, 't');
-    const uMouse = gl.getUniformLocation(prog, 'mouse'), uForca = gl.getUniformLocation(prog, 'forca');
-    const ESCALA = 0.6;                                // o veludo é suave: meia resolução basta
-    let W = 1, H = 1;
-    function medir() {
-      const r = cv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1) * ESCALA;
-      W = Math.max(1, Math.round(r.width * d)); H = Math.max(1, Math.round(r.height * d));
-      if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
-      gl.viewport(0, 0, W, H);
-    }
-    let mx = .5, my = .55, tx = .5, ty = .55, forca = .5, ultimoMov = -1e9, ultimo = 0;
-    sec.addEventListener('pointermove', e => {
-      const r = cv.getBoundingClientRect();
-      tx = (e.clientX - r.left) / r.width; ty = 1 - (e.clientY - r.top) / r.height;
-      ultimoMov = performance.now();
-    }, { passive: true });
-    sec.addEventListener('pointerleave', () => { ultimoMov = -1e9; });
-    const t0 = performance.now();
-    function desenhar(agora, parado) {
-      const dt = Math.min(64, agora - (ultimo || agora)); ultimo = agora;
-      const t = parado ? 14 : (agora - t0) / 1000 * 0.75;
-      const solto = agora - ultimoMov > 2500;
-      if (solto) { tx = .5 + .3 * Math.sin(t * .37); ty = .55 + .2 * Math.sin(t * .29 + 1.3); }  // sem mouse, a luz passeia sozinha
-      const k = 1 - Math.pow(1 - .06, dt / 16.667);
-      mx += (tx - mx) * k; my += (ty - my) * k;
-      forca += ((solto ? .6 : 1) - forca) * k;
-      gl.uniform2f(uTela, W, H); gl.uniform1f(uT, t);
-      gl.uniform2f(uMouse, parado ? .5 : mx, parado ? .55 : my); gl.uniform1f(uForca, parado ? .6 : forca);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    }
-    let id = null, vivo = false, visivel = false;
-    const rodar = agora => { desenhar(agora, false); id = requestAnimationFrame(rodar); };
-    const ligar = () => { if (vivo || RM.matches) return; vivo = true; ultimo = 0; id = requestAnimationFrame(rodar); };
-    const desligar = () => { if (!vivo) return; vivo = false; cancelAnimationFrame(id); };
-    new ResizeObserver(() => { medir(); if (!vivo) desenhar(performance.now(), RM.matches); }).observe(cv);
-    new IntersectionObserver(es => { visivel = es[0].isIntersecting; visivel ? ligar() : desligar(); }).observe(sec);
-    RM.addEventListener('change', e => { if (e.matches) { desligar(); desenhar(performance.now(), true); } else if (visivel) ligar(); });
-    medir();
-    desenhar(performance.now(), RM.matches);          // movimento reduzido: um quadro parado, bonito
-    cv.classList.add('on');
-  })();
-
   /* ---------- partida ---------- */
-  applyHeroMode();
   onPageScroll();
-  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => { measure(); runLoadRamp(); });
-  addEventListener('load', () => { measure(); onPageScroll(); });
+  addEventListener('load', onPageScroll);
 })();
 </script>
 </body>
